@@ -6,7 +6,13 @@ import { useMqtt } from "@/contexts/mqtt-context";
 import { AlertCircle } from "lucide-react";
 
 export default function DeviceControl() {
-  const { mqttStatus, telemetryData, publishMode, publishServo } = useMqtt();
+  const {
+    mqttStatus,
+    telemetryData,
+    awaitingHeartbeat,
+    publishMode,
+    publishServo,
+  } = useMqtt();
   const connected = mqttStatus.isConnected;
   const telemetry = telemetryData;
 
@@ -38,6 +44,17 @@ export default function DeviceControl() {
           <AlertDescription className="text-yellow-700 dark:text-yellow-300">
             No device connected. Please select a device and connect to control
             it.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Heartbeat Alert */}
+      {connected && awaitingHeartbeat && (
+        <Alert className="border-blue-500 bg-blue-50 dark:bg-blue-950/50">
+          <AlertCircle className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-700 dark:text-blue-300">
+            Connected to MQTT broker but waiting for device to send telemetry
+            data...
           </AlertDescription>
         </Alert>
       )}

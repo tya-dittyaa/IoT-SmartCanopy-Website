@@ -46,6 +46,7 @@ export interface MqttContextType {
   connectToDevice: () => void;
   disconnectFromDevice: () => void;
   shouldConnect: boolean;
+  awaitingHeartbeat: boolean;
   publishMode: (mode: "auto" | "manual") => void;
   publishServo: (cmd: "open" | "close") => void;
 }
@@ -71,23 +72,19 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
     mode: "unknown",
   });
 
-  // MQTT Connection State
   const clientRef = useRef<MqttClient | null>(null);
   const [lastHeartbeat, setLastHeartbeat] = useState<number | null>(null);
   const [awaitingHeartbeat, setAwaitingHeartbeat] = useState(false);
   const hbIntervalRef = useRef<number | null>(null);
 
-  // Use device configs from the imported configuration
   const availableDevices = deviceConfigs;
 
-  // Get current device config
   const selectedDeviceConfig = useMemo((): DeviceConfig | undefined => {
     return availableDevices.find(
       (device) => device.deviceId === selectedDeviceId
     );
   }, [availableDevices, selectedDeviceId]);
 
-  // Generate MQTT topic names based on device id
   const getTopics = useCallback((deviceId: string) => {
     const topicBase = `devices/${deviceId}`;
     return {
@@ -97,7 +94,6 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  // Reset telemetry and heartbeat state
   const resetTelemetryData = useCallback(() => {
     setTelemetryData({
       temperature: null,
@@ -138,7 +134,6 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
     );
   }, [availableDevices, selectedDeviceId]);
 
-  // Connect to MQTT broker
   const connectMQTT = useCallback(() => {
     if (!selectedDeviceConfig) {
       console.error("No device selected for connection");
@@ -152,7 +147,6 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
     });
     resetTelemetryData();
 
-    // Close existing connection
     if (clientRef.current) {
       try {
         clientRef.current.end(true);
@@ -162,14 +156,13 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
       clientRef.current = null;
     }
 
-    // Connection timeout - shorter for faster error detection
     const connectionTimeout = setTimeout(() => {
       setMQTTStatus({
         isConnected: false,
         isConnecting: false,
         connectionError: "Connection timeout - Server not responding",
       });
-      setShouldConnect(false); // Stop retrying on timeout
+      setShouldConnect(false);
       if (clientRef.current) {
         try {
           clientRef.current.end(true);
@@ -178,18 +171,15 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
         }
         clientRef.current = null;
       }
-    }, 3000); // Reduced from 10s to 3s for faster error detection
+    }, 3000);
 
     try {
-      console.log("Attempting MQTT connection to:", selectedDeviceConfig.url);
-      console.log("Device ID:", selectedDeviceConfig.deviceId);
-
       const client = mqtt.connect(selectedDeviceConfig.url, {
-        reconnectPeriod: 0, // Disable auto-reconnect
-        connectTimeout: 2000, // Reduced from 8s to 2s for faster failure detection
+        reconnectPeriod: 0,
+        connectTimeout: 2000,
         keepalive: 60,
-        clean: true, // Ensure clean session
-        manualConnect: false, // Auto-connect immediately
+        clean: true,
+        manualConnect: false,
         clientId: `nextjs-client-${Math.random().toString(16).substr(2, 8)}`,
         ...(selectedDeviceConfig.username && {
           username: selectedDeviceConfig.username,
@@ -202,7 +192,6 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
       const topics = getTopics(selectedDeviceConfig.deviceId);
 
       client.on("connect", () => {
-        console.log("✅ MQTT Connected successfully!");
         clearTimeout(connectionTimeout);
         setMQTTStatus({
           isConnected: true,
@@ -222,7 +211,7 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
           isConnecting: false,
           connectionError: err.message || "Connection failed",
         });
-        setShouldConnect(false); // Stop retrying on error
+        setShouldConnect(false);
         resetTelemetryData();
         if (clientRef.current) {
           try {
@@ -275,18 +264,17 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
           isConnecting: false,
           connectionError: "Connection closed",
         });
-        setShouldConnect(false); // Stop retrying on close
+        setShouldConnect(false);
         resetTelemetryData();
       });
 
       client.on("offline", () => {
-        console.log("MQTT offline");
         setMQTTStatus({
           isConnected: false,
           isConnecting: false,
           connectionError: "Connection offline",
         });
-        setShouldConnect(false); // Stop retrying on offline
+        setShouldConnect(false);
         resetTelemetryData();
       });
 
@@ -299,12 +287,11 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
         isConnecting: false,
         connectionError: e instanceof Error ? e.message : "Connection failed",
       });
-      setShouldConnect(false); // Stop retrying on catch error
+      setShouldConnect(false);
       resetTelemetryData();
     }
   }, [selectedDeviceConfig, getTopics, resetTelemetryData, awaitingHeartbeat]);
 
-  // Disconnect from MQTT broker
   const disconnectMQTT = useCallback(() => {
     if (clientRef.current) {
       clientRef.current.end(true);
@@ -318,7 +305,6 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
     resetTelemetryData();
   }, [resetTelemetryData]);
 
-  // Publish commands
   const publishMode = useCallback(
     (mode: "auto" | "manual") => {
       if (clientRef.current && mqttStatus.isConnected && selectedDeviceConfig) {
@@ -347,29 +333,18 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
     [mqttStatus.isConnected, selectedDeviceConfig, getTopics]
   );
 
-  // Connection control based on shouldConnect
   useEffect(() => {
-    console.log("🔍 Connection Effect:", {
-      shouldConnect,
-      hasDeviceConfig: !!selectedDeviceConfig,
-      isConnected: mqttStatus.isConnected,
-      isConnecting: mqttStatus.isConnecting,
-      connectionError: mqttStatus.connectionError,
-    });
-
     if (
       shouldConnect &&
       selectedDeviceConfig &&
       !mqttStatus.isConnected &&
       !mqttStatus.isConnecting
     ) {
-      console.log("🔄 shouldConnect=true, attempting to connect...");
       connectMQTT();
     } else if (
       !shouldConnect &&
       (mqttStatus.isConnected || mqttStatus.isConnecting)
     ) {
-      console.log("🔄 shouldConnect=false, disconnecting...");
       disconnectMQTT();
     }
   }, [
@@ -382,7 +357,6 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
     disconnectMQTT,
   ]);
 
-  // Auto-clear error after 5 seconds
   useEffect(() => {
     if (mqttStatus.connectionError) {
       const timer = setTimeout(() => {
@@ -392,7 +366,6 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [mqttStatus.connectionError]);
 
-  // Heartbeat monitoring
   useEffect(() => {
     if (!mqttStatus.isConnected) {
       if (hbIntervalRef.current) {
@@ -407,7 +380,6 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
       if (lastHeartbeat === null) return;
 
       if (now - lastHeartbeat > 30000) {
-        // Heartbeat timeout - disconnect and reset
         if (clientRef.current) {
           try {
             clientRef.current.end(true);
@@ -421,7 +393,7 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
           isConnecting: false,
           connectionError: "Connection lost",
         });
-        setShouldConnect(false); // Stop retrying on heartbeat timeout
+        setShouldConnect(false);
         resetTelemetryData();
         if (hbIntervalRef.current) {
           window.clearInterval(hbIntervalRef.current);
@@ -443,7 +415,6 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
     resetTelemetryData,
   ]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (clientRef.current) {
@@ -455,7 +426,6 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
 
   const connectToDevice = useCallback(() => {
     if (selectedDeviceId) {
-      // Clear any existing error when manually connecting
       setMQTTStatus((prev) => ({
         ...prev,
         connectionError: null,
@@ -484,6 +454,7 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
         connectToDevice,
         disconnectFromDevice,
         shouldConnect,
+        awaitingHeartbeat,
         publishMode,
         publishServo,
       }}
