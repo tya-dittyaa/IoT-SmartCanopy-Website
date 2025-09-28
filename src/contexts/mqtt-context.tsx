@@ -180,7 +180,7 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
         keepalive: 60,
         clean: true,
         manualConnect: false,
-        clientId: `nextjs-client-${Math.random().toString(16).substr(2, 8)}`,
+        clientId: `web-client-${Math.random().toString(16).substr(2, 8)}`,
         ...(selectedDeviceConfig.username && {
           username: selectedDeviceConfig.username,
         }),
