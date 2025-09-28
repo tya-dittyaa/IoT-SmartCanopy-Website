@@ -10,6 +10,6 @@ export const deviceConfigs: DeviceConfig[] = [
   {
     name: "Smart Canopy #1",
     deviceId: "smartcanopy-001",
-    url: "ws://192.168.138.82:9001/mqtt",
+    url: "ws://localhost:9001",
   },
 ];
