@@ -5,6 +5,7 @@ import DashboardHome from "./pages/dashboard/DashboardHome";
 import DeviceControl from "./pages/dashboard/DeviceControl";
 import LiveMonitoring from "./pages/dashboard/LiveMonitoring";
 import Home from "./pages/Home";
+import NotFound from "./pages/NotFound";
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
             </DashboardLayout>
           }
         />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );
