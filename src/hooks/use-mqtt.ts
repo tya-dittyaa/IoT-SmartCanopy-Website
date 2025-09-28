@@ -1,4 +1,4 @@
-import mqtt, { MqttClient } from "mqtt";
+import mqtt, { type MqttClient } from "mqtt";
 import { useEffect, useRef, useState } from "react";
 
 export interface MQTTConfig {
