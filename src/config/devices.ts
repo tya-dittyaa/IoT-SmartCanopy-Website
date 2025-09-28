@@ -9,8 +9,8 @@ export interface DeviceConfig {
 
 export const deviceConfigs: DeviceConfig[] = [
   {
-    name: "Smart Canopy #1",
-    deviceId: "smartcanopy-001",
+    name: "Raph ESP32 Device",
+    deviceId: "raph_device",
     url: "ws://localhost:9001",
   },
 ];
