@@ -2,17 +2,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useConnection } from "@/contexts/connection-context";
-import { useMQTT } from "@/hooks/use-mqtt";
+import { useMqtt } from "@/contexts/mqtt-context";
 import { AlertCircle } from "lucide-react";
 
 export default function DeviceControl() {
-  const { getSelectedDeviceConfig } = useConnection();
-  const selectedDeviceConfig = getSelectedDeviceConfig();
-
-  const { connected, telemetry, publishMode, publishServo } = useMQTT(
-    selectedDeviceConfig || undefined
-  );
+  const { mqttStatus, telemetryData, publishMode, publishServo } = useMqtt();
+  const connected = mqttStatus.isConnected;
+  const telemetry = telemetryData;
 
   const getModeIcon = () => {
     switch (telemetry.mode) {

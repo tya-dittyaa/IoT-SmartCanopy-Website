@@ -4,15 +4,13 @@ import {
 } from "@/components/charts/radial-charts";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useConnection } from "@/contexts/connection-context";
-import { useMQTT } from "@/hooks/use-mqtt";
+import { useMqtt } from "@/contexts/mqtt-context";
 import { AlertCircle } from "lucide-react";
 
 export default function LiveMonitoring() {
-  const { getSelectedDeviceConfig } = useConnection();
-  const selectedDeviceConfig = getSelectedDeviceConfig();
-
-  const { connected, telemetry } = useMQTT(selectedDeviceConfig || undefined);
+  const { mqttStatus, telemetryData } = useMqtt();
+  const connected = mqttStatus.isConnected;
+  const telemetry = telemetryData;
 
   const getRainStatusIcon = () => {
     switch (telemetry.rainStatus) {

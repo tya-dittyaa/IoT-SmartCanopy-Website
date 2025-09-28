@@ -16,7 +16,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { useConnection } from "@/contexts/connection-context";
+import { useMqtt } from "@/contexts/mqtt-context";
 
 const menuItems = [
   { title: "Home", url: "/dashboard", icon: Home },
@@ -27,7 +27,7 @@ const menuItems = [
 export function IoTDashboardSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
-  const { selectedDeviceId, deviceStatuses, mqttStatus } = useConnection();
+  const { selectedDeviceId, deviceStatuses, mqttStatus } = useMqtt();
 
   const selectedDeviceStatus = selectedDeviceId
     ? deviceStatuses[selectedDeviceId]
@@ -73,6 +73,8 @@ export function IoTDashboardSidebar({
                     className={`flex items-center gap-2 px-2 py-1 rounded-md transition-all duration-300 ${
                       isMQTTConnected
                         ? "bg-green-500/10 animate-pulse"
+                        : mqttStatus.isConnecting
+                        ? "bg-yellow-500/10 animate-pulse"
                         : "bg-red-500/10 animate-pulse"
                     }`}
                   >
@@ -80,13 +82,19 @@ export function IoTDashboardSidebar({
                       <div className="relative">
                         <Radio
                           className={`h-4 w-4 ${
-                            isMQTTConnected ? "text-green-500" : "text-red-500"
+                            isMQTTConnected
+                              ? "text-green-500"
+                              : mqttStatus.isConnecting
+                              ? "text-yellow-500"
+                              : "text-red-500"
                           }`}
                         />
                         <div
                           className={`absolute inset-0 rounded-full animate-ping ${
                             isMQTTConnected
                               ? "bg-green-500/20"
+                              : mqttStatus.isConnecting
+                              ? "bg-yellow-500/20"
                               : "bg-red-500/20"
                           }`}
                         ></div>
