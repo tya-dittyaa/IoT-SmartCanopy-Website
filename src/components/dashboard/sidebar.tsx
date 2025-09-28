@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 
 import DeviceSelector from "@/components/dashboard/device-selector";
 import { ModeToggle } from "@/components/ui/mode-toggle";
-import { Separator } from "@/components/ui/separator";
 import {
   Sidebar,
   SidebarContent,
@@ -56,8 +55,6 @@ export function IoTDashboardSidebar({
         </div>
       </SidebarHeader>
 
-      <Separator />
-
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Device</SidebarGroupLabel>
@@ -68,8 +65,6 @@ export function IoTDashboardSidebar({
 
         {selectedDeviceId && (
           <>
-            <Separator />
-
             <SidebarGroup>
               <SidebarGroupLabel>Status</SidebarGroupLabel>
               <SidebarGroupContent>
@@ -133,8 +128,6 @@ export function IoTDashboardSidebar({
           </>
         )}
 
-        <Separator />
-
         <SidebarGroup>
           <SidebarGroupLabel>Quick Access</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -150,8 +143,6 @@ export function IoTDashboardSidebar({
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-        <Separator />
 
         <SidebarGroup>
           <SidebarGroupLabel>Dashboard</SidebarGroupLabel>
@@ -171,8 +162,6 @@ export function IoTDashboardSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-
-      <Separator />
 
       <SidebarFooter>
         <div className="flex items-center justify-between">
