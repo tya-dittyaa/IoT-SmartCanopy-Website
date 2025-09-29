@@ -16,7 +16,16 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route
+          path="/"
+          element={
+            <Suspense
+              fallback={<LoadingSpinner size="lg" text="Loading Home..." />}
+            >
+              <Home />
+            </Suspense>
+          }
+        />
         <Route
           path="/dashboard"
           element={
