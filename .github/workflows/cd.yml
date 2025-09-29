@@ -30,7 +30,7 @@ jobs:
 
       - name: Show container status
         run: |
-          docker ps | grep selfbot || echo "No selfbot containers running."
+          docker ps | grep smartcanopy-website || echo "No smartcanopy-website containers running."
 
       - name: Prune dangling images after deployment
         run: docker image prune -f
