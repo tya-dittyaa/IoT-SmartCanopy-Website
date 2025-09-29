@@ -1,32 +1,60 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "./App.css";
-import DashboardLayout from "./components/dashboard/dashboard-layout";
-import DashboardHome from "./pages/dashboard/DashboardHome";
-import DeviceControl from "./pages/dashboard/DeviceControl";
-import LiveMonitoring from "./pages/dashboard/LiveMonitoring";
+import LoadingSpinner from "./components/ui/loading-spinner";
 import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
+
+const DashboardLayout = lazy(
+  () => import("./components/dashboard/dashboard-layout")
+);
+const DashboardHome = lazy(() => import("./pages/dashboard/DashboardHome"));
+const DeviceControl = lazy(() => import("./pages/dashboard/DeviceControl"));
+const LiveMonitoring = lazy(() => import("./pages/dashboard/LiveMonitoring"));
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/dashboard" element={<DashboardHome />} />
+        <Route
+          path="/dashboard"
+          element={
+            <Suspense
+              fallback={
+                <LoadingSpinner size="lg" text="Loading Dashboard..." />
+              }
+            >
+              <DashboardHome />
+            </Suspense>
+          }
+        />
         <Route
           path="/dashboard/live"
           element={
-            <DashboardLayout>
-              <LiveMonitoring />
-            </DashboardLayout>
+            <Suspense
+              fallback={
+                <LoadingSpinner size="lg" text="Loading Live Monitoring..." />
+              }
+            >
+              <DashboardLayout>
+                <LiveMonitoring />
+              </DashboardLayout>
+            </Suspense>
           }
         />
         <Route
           path="/dashboard/control"
           element={
-            <DashboardLayout>
-              <DeviceControl />
-            </DashboardLayout>
+            <Suspense
+              fallback={
+                <LoadingSpinner size="lg" text="Loading Device Control..." />
+              }
+            >
+              <DashboardLayout>
+                <DeviceControl />
+              </DashboardLayout>
+            </Suspense>
           }
         />
         <Route path="*" element={<NotFound />} />
