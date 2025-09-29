@@ -14,9 +14,9 @@ export default function LiveMonitoring() {
 
   const getRainStatusIcon = () => {
     switch (telemetry.rainStatus) {
-      case "Rain":
+      case "RAIN":
         return "🌧️";
-      case "No Rain":
+      case "DRY":
         return "☀️";
       default:
         return "❓";
@@ -24,8 +24,14 @@ export default function LiveMonitoring() {
   };
 
   const getServoStatusIcon = () => {
-    if (telemetry.servoStatus === "Unknown") return "❓";
-    return telemetry.servoStatus.toLowerCase().includes("open") ? "🔓" : "🔒";
+    switch (telemetry.servoStatus) {
+      case "OPEN":
+        return "🔓";
+      case "CLOSED":
+        return "🔒";
+      default:
+        return "❓";
+    }
   };
 
   return (

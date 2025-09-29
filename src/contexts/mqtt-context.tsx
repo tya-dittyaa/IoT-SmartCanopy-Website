@@ -67,8 +67,8 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
   const [telemetryData, setTelemetryData] = useState<TelemetryData>({
     temperature: null,
     humidity: null,
-    rainStatus: "Unknown",
-    servoStatus: "Unknown",
+    rainStatus: "unknown",
+    servoStatus: "unknown",
     mode: "unknown",
   });
 
@@ -91,6 +91,7 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
       cmdMode: `${topicBase}/command/mode`,
       cmdServo: `${topicBase}/command/servo`,
       telemetry: `${topicBase}/telemetry`,
+      heartbeat: `${topicBase}/heartbeat`,
     };
   }, []);
 
@@ -98,8 +99,8 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
     setTelemetryData({
       temperature: null,
       humidity: null,
-      rainStatus: "Unknown",
-      servoStatus: "Unknown",
+      rainStatus: "unknown",
+      servoStatus: "unknown",
       mode: "unknown",
     });
     setLastHeartbeat(null);
@@ -201,6 +202,7 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
         setAwaitingHeartbeat(true);
         setLastHeartbeat(null);
         client.subscribe(topics.telemetry);
+        client.subscribe(topics.heartbeat);
       });
 
       client.on("error", (err: Error) => {
@@ -227,12 +229,28 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
         const msg = payload.toString();
         const now = Date.now();
 
-        setLastHeartbeat(now);
-        if (awaitingHeartbeat) setAwaitingHeartbeat(false);
+        if (topic === topics.heartbeat) {
+          // Heartbeat message received - device is alive
+          setLastHeartbeat(now);
+          if (awaitingHeartbeat) setAwaitingHeartbeat(false);
+
+          try {
+            const heartbeatData = JSON.parse(msg);
+            console.log("Heartbeat received:", heartbeatData);
+            // Update device status based on heartbeat
+            updateDeviceStatus(selectedDeviceConfig.deviceId, {
+              lastHeartbeat: now,
+              isConnected: true,
+            });
+          } catch (e) {
+            console.error("Error parsing heartbeat JSON:", e);
+          }
+        }
 
         if (topic === topics.telemetry) {
           try {
             const data = JSON.parse(msg);
+            console.log("Telemetry received:", data);
             setTelemetryData((prev) => ({
               ...prev,
               ...(data.temperature !== undefined && {
@@ -242,13 +260,13 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
                 humidity: Number(data.humidity),
               }),
               ...(data.rainStatus !== undefined && {
-                rainStatus: data.rainStatus === "Rain" ? "Rain" : "No Rain",
+                rainStatus: data.rainStatus,
               }),
               ...(data.servoStatus !== undefined && {
                 servoStatus: data.servoStatus,
               }),
               ...(data.mode !== undefined && {
-                mode: data.mode === "manual" ? "manual" : "auto",
+                mode: data.mode.toLowerCase() === "manual" ? "manual" : "auto",
               }),
             }));
           } catch (e) {
@@ -290,7 +308,13 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
       setShouldConnect(false);
       resetTelemetryData();
     }
-  }, [selectedDeviceConfig, getTopics, resetTelemetryData, awaitingHeartbeat]);
+  }, [
+    selectedDeviceConfig,
+    getTopics,
+    resetTelemetryData,
+    awaitingHeartbeat,
+    updateDeviceStatus,
+  ]);
 
   const disconnectMQTT = useCallback(() => {
     if (clientRef.current) {
@@ -324,10 +348,8 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
       if (clientRef.current && mqttStatus.isConnected && selectedDeviceConfig) {
         const topics = getTopics(selectedDeviceConfig.deviceId);
         clientRef.current.publish(topics.cmdServo, cmd, { qos: 0 });
-        setTelemetryData((prev) => ({
-          ...prev,
-          servoStatus: cmd === "open" ? "Open" : "Closed",
-        }));
+        // Don't update status immediately - wait for telemetry confirmation
+        console.log(`Servo command sent: ${cmd}`);
       }
     },
     [mqttStatus.isConnected, selectedDeviceConfig, getTopics]
@@ -379,7 +401,7 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
       const now = Date.now();
       if (lastHeartbeat === null) return;
 
-      if (now - lastHeartbeat > 30000) {
+      if (now - lastHeartbeat > 60000) {
         if (clientRef.current) {
           try {
             clientRef.current.end(true);
