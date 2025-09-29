@@ -3,3 +3,5 @@ services:
     build: .
     container_name: smartcanopy-website
     restart: unless-stopped
+    ports:
+      - "5173:5173"
