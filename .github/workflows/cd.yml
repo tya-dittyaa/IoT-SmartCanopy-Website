@@ -1,0 +1,39 @@
+name: CD to VPS (Self-Hosted)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout selected branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Stop containers
+        run: podman compose down --remove-orphans
+
+      - name: Prune dangling images before build
+        run: podman image prune -f
+
+      - name: Build containers
+        run: podman compose build
+
+      - name: Start containers
+        run: podman compose up -d
+
+      - name: Show container status
+        run: |
+          podman ps | grep selfbot || echo "No selfbot containers running."
+
+      - name: Prune dangling images after deployment
+        run: podman image prune -f
+
+      - name: Deployment complete
+        run: echo "Deployment complete."

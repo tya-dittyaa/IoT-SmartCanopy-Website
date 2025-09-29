@@ -1,0 +1,5 @@
+services:
+  smartcanopy-website:
+    build: .
+    container_name: smartcanopy-website
+    restart: unless-stopped
