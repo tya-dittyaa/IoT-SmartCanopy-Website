@@ -35,9 +35,10 @@ export function IoTDashboardSidebar({
 
   const isMQTTConnected = mqttStatus.isConnected;
 
-  const isDeviceHeartbeatActive = selectedDeviceStatus?.lastHeartbeat
-    ? Date.now() - selectedDeviceStatus.lastHeartbeat < 30000
-    : false;
+  const isDeviceHeartbeatActive =
+    isMQTTConnected && selectedDeviceStatus?.lastHeartbeat
+      ? Date.now() - selectedDeviceStatus.lastHeartbeat < 30000
+      : false;
 
   return (
     <Sidebar variant="inset" {...props}>

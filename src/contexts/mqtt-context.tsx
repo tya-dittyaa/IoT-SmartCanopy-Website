@@ -172,7 +172,7 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
         }
         clientRef.current = null;
       }
-    }, 3000);
+    }, 10000); // Normal 10 second timeout
 
     try {
       const client = mqtt.connect(selectedDeviceConfig.url, {
@@ -199,10 +199,11 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
           isConnecting: false,
           connectionError: null,
         });
-        setAwaitingHeartbeat(true);
+        setAwaitingHeartbeat(false);
         setLastHeartbeat(null);
         client.subscribe(topics.telemetry);
         client.subscribe(topics.heartbeat);
+        console.log("✅ MQTT connected - ready to rock!");
       });
 
       client.on("error", (err: Error) => {
@@ -230,13 +231,12 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
         const now = Date.now();
 
         if (topic === topics.heartbeat) {
-          // Heartbeat message received - device is alive
+          // Heartbeat message received - just update device status
           setLastHeartbeat(now);
-          if (awaitingHeartbeat) setAwaitingHeartbeat(false);
 
           try {
             const heartbeatData = JSON.parse(msg);
-            console.log("Heartbeat received:", heartbeatData);
+            console.log("💓 Heartbeat:", heartbeatData);
             // Update device status based on heartbeat
             updateDeviceStatus(selectedDeviceConfig.deviceId, {
               lastHeartbeat: now,
@@ -250,7 +250,7 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
         if (topic === topics.telemetry) {
           try {
             const data = JSON.parse(msg);
-            console.log("Telemetry received:", data);
+            console.log("📊 Telemetry:", data);
             setTelemetryData((prev) => ({
               ...prev,
               ...(data.temperature !== undefined && {
@@ -308,13 +308,7 @@ export const MqttProvider = ({ children }: { children: ReactNode }) => {
       setShouldConnect(false);
       resetTelemetryData();
     }
-  }, [
-    selectedDeviceConfig,
-    getTopics,
-    resetTelemetryData,
-    awaitingHeartbeat,
-    updateDeviceStatus,
-  ]);
+  }, [selectedDeviceConfig, getTopics, resetTelemetryData, updateDeviceStatus]);
 
   const disconnectMQTT = useCallback(() => {
     if (clientRef.current) {
