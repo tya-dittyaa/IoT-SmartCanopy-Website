@@ -23,6 +23,6 @@ COPY --from=builder /app/dist ./
 # Copy custom nginx config if needed
 # COPY nginx.conf /etc/nginx/nginx.conf
 
-EXPOSE 29925
+EXPOSE 80
 
 CMD ["nginx", "-g", "daemon off;"]
