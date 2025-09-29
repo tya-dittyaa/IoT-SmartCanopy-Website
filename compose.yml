@@ -4,4 +4,4 @@ services:
     container_name: smartcanopy-website
     restart: unless-stopped
     ports:
-      - "5173:5173"
+      - "29925:80"   # host:container
