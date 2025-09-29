@@ -73,10 +73,10 @@ export function IoTDashboardSidebar({
                   <div
                     className={`flex items-center gap-2 px-2 py-1 rounded-md transition-all duration-300 ${
                       isMQTTConnected
-                        ? "bg-green-500/10 animate-pulse"
+                        ? "bg-green-500/10"
                         : mqttStatus.isConnecting
-                        ? "bg-yellow-500/10 animate-pulse"
-                        : "bg-red-500/10 animate-pulse"
+                        ? "bg-yellow-500/10"
+                        : "bg-red-500/10"
                     }`}
                   >
                     <div className="flex items-center gap-2 flex-1">
@@ -90,15 +90,6 @@ export function IoTDashboardSidebar({
                               : "text-red-500"
                           }`}
                         />
-                        <div
-                          className={`absolute inset-0 rounded-full animate-ping ${
-                            isMQTTConnected
-                              ? "bg-green-500/20"
-                              : mqttStatus.isConnecting
-                              ? "bg-yellow-500/20"
-                              : "bg-red-500/20"
-                          }`}
-                        ></div>
                       </div>
                       <span className="text-sm">MQTT Connection</span>
                     </div>
@@ -107,8 +98,8 @@ export function IoTDashboardSidebar({
                   <div
                     className={`flex items-center gap-2 px-2 py-1 rounded-md transition-all duration-300 ${
                       isDeviceHeartbeatActive
-                        ? "bg-green-500/10 animate-pulse"
-                        : "bg-red-500/10 animate-pulse"
+                        ? "bg-green-500/10"
+                        : "bg-red-500/10"
                     }`}
                   >
                     <div className="flex items-center gap-2 flex-1">
@@ -120,13 +111,6 @@ export function IoTDashboardSidebar({
                               : "text-red-500"
                           }`}
                         />
-                        <div
-                          className={`absolute inset-0 rounded-full animate-ping ${
-                            isDeviceHeartbeatActive
-                              ? "bg-green-500/20"
-                              : "bg-red-500/20"
-                          }`}
-                        ></div>
                       </div>
                       <span className="text-sm">Device Heartbeat</span>
                     </div>
