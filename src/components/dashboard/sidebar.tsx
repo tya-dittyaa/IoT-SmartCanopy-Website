@@ -16,7 +16,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { useWs } from "@/contexts/ws-context";
+import { useDevice } from "@/contexts/device-context";
 
 const menuItems = [
   { title: "Home", url: "/dashboard", icon: Home },
@@ -34,7 +34,7 @@ export function IoTDashboardSidebar({
     disconnectFromDevice,
     refreshDevices,
     wsStatus,
-  } = useWs();
+  } = useDevice();
   const selectedDevice = selectedDeviceId
     ? availableDevices.find((d) => d.deviceId === selectedDeviceId)
     : undefined;

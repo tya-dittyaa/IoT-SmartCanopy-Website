@@ -2,11 +2,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useWs } from "@/contexts/ws-context";
+import { useDevice } from "@/contexts/device-context";
 import { AlertCircle } from "lucide-react";
 
 export default function DeviceControl() {
-  const { wsStatus, telemetryData, publishMode, publishServo } = useWs();
+  const { wsStatus, telemetryData, publishMode, publishServo } = useDevice();
   const connected = wsStatus.isConnected;
   const telemetry = telemetryData;
 

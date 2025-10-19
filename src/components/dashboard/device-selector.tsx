@@ -11,7 +11,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useWs } from "@/contexts/ws-context";
+import { useDevice } from "@/contexts/device-context";
 import { cn } from "@/lib/utils";
 import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
 import React from "react";
@@ -23,7 +23,8 @@ interface DeviceSelectorProps {
 export default function DeviceSelector({
   onDeviceSelect,
 }: DeviceSelectorProps) {
-  const { selectedDeviceId, setSelectedDeviceId, availableDevices } = useWs();
+  const { selectedDeviceId, setSelectedDeviceId, availableDevices } =
+    useDevice();
 
   const [open, setOpen] = React.useState(false);
 
@@ -55,7 +56,9 @@ export default function DeviceSelector({
             size="default"
             disabled={availableDevices.length === 0}
           >
-            {availableDevices.length === 0 ? "No device available" : getSelectedDeviceStatus()}
+            {availableDevices.length === 0
+              ? "No device available"
+              : getSelectedDeviceStatus()}
             <ChevronsUpDownIcon className="ml-2 h-3 w-3 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>

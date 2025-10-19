@@ -39,20 +39,20 @@ export interface ISensorTelemetry {
   mode: "AUTO" | "MANUAL";
 }
 
-export interface WSConnectionStatus {
+export interface DeviceConnectionStatus {
   isConnected: boolean;
   isConnecting: boolean;
   connectionError: string | null;
 }
 
-export interface WsContextType {
+export interface DeviceContextType {
   selectedDeviceId: string;
   setSelectedDeviceId: (deviceId: string) => void;
   availableDevices: Device[];
   updateDeviceStatus: (deviceId: string, status: Partial<Device>) => void;
   getSelectedDevice: () => Device | undefined;
-  wsStatus: WSConnectionStatus;
-  updateWsStatus: (status: WSConnectionStatus) => void;
+  wsStatus: DeviceConnectionStatus;
+  updateWsStatus: (status: DeviceConnectionStatus) => void;
   telemetryData: TelemetryData;
   updateTelemetryData: (data: TelemetryData) => void;
   connectToDevice: () => void;
@@ -62,11 +62,11 @@ export interface WsContextType {
   refreshDevices: () => Promise<void>;
 }
 
-const WsContext = createContext<WsContextType | undefined>(undefined);
+const DeviceContext = createContext<DeviceContextType | undefined>(undefined);
 
-export const WsProvider = ({ children }: { children: ReactNode }) => {
+export const DeviceProvider = ({ children }: { children: ReactNode }) => {
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>("");
-  const [wsStatus, setWsStatus] = useState<WSConnectionStatus>({
+  const [wsStatus, setWsStatus] = useState<DeviceConnectionStatus>({
     isConnected: false,
     isConnecting: false,
     connectionError: null,
@@ -106,7 +106,7 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const updateWsStatus = useCallback(
-    (status: WSConnectionStatus) => setWsStatus(status),
+    (status: DeviceConnectionStatus) => setWsStatus(status),
     []
   );
 
@@ -508,7 +508,7 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
   }, [resetTelemetryData, selectedDeviceId, updateDeviceStatus]);
 
   return (
-    <WsContext.Provider
+    <DeviceContext.Provider
       value={{
         selectedDeviceId,
         setSelectedDeviceId,
@@ -527,14 +527,14 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
       }}
     >
       {children}
-    </WsContext.Provider>
+    </DeviceContext.Provider>
   );
 };
 
-export const useWs = () => {
-  const context = useContext(WsContext);
+export const useDevice = () => {
+  const context = useContext(DeviceContext);
   if (context === undefined) {
-    throw new Error("useWs must be used within a WsProvider");
+    throw new Error("useDevice must be used within a DeviceProvider");
   }
   return context;
 };
