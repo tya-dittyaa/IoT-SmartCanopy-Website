@@ -9,7 +9,7 @@ import {
 import React from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
-interface TempAreaProps {
+interface TemperatureAreaProps {
   data: Array<{ time: string; temp: number }>;
   latestTime?: string | undefined;
 }
@@ -18,7 +18,7 @@ const chartConfig = {
   temp: { label: "Temperature (°C)", color: "#ef4444" },
 } satisfies ChartConfig;
 
-export const TempArea: React.FC<TempAreaProps> = ({ data }) => {
+export const TemperatureArea: React.FC<TemperatureAreaProps> = ({ data }) => {
   return (
     <div className="w-full h-full">
       <ChartContainer config={{ temp: chartConfig.temp }}>
@@ -51,4 +51,4 @@ export const TempArea: React.FC<TempAreaProps> = ({ data }) => {
   );
 };
 
-export default TempArea;
+export default TemperatureArea;

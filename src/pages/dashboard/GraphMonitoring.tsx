@@ -21,8 +21,8 @@ import {
   fetchTemperatureTelemetry,
 } from "@/api/telemetries";
 import CombinedArea from "@/components/charts/combined-area";
-import HumArea from "@/components/charts/hum-area";
-import TempArea from "@/components/charts/temp-area";
+import HumidityArea from "@/components/charts/humidity-area";
+import TemperatureArea from "@/components/charts/temperature-area";
 import { useDevice } from "@/contexts/device-context";
 import type { TelemetryDto } from "@/types/telemetry";
 
@@ -203,7 +203,7 @@ export default function GraphMonitoring() {
             </div>
           </CardHeader>
           <CardContent className="flex-1">
-            <TempArea data={filteredTempData} />
+            <TemperatureArea data={filteredTempData} />
           </CardContent>
           <CardFooter>
             <div className="flex w-full items-center gap-2 text-sm">
@@ -223,7 +223,7 @@ export default function GraphMonitoring() {
             </div>
           </CardHeader>
           <CardContent className="flex-1">
-            <HumArea data={filteredHumidityData} />
+            <HumidityArea data={filteredHumidityData} />
           </CardContent>
           <CardFooter>
             <div className="flex w-full items-center gap-2 text-sm">

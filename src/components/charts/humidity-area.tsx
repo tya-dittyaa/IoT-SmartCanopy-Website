@@ -9,7 +9,7 @@ import {
 import React from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
-interface HumAreaProps {
+interface HumidityAreaProps {
   data: Array<{ time: string; hum: number }>;
 }
 
@@ -17,7 +17,7 @@ const chartConfig = {
   hum: { label: "Humidity (%)", color: "#3b82f6" },
 } satisfies ChartConfig;
 
-export const HumArea: React.FC<HumAreaProps> = ({ data }) => {
+export const HumidityArea: React.FC<HumidityAreaProps> = ({ data }) => {
   return (
     <div className="w-full h-full">
       <ChartContainer config={{ hum: chartConfig.hum }}>
@@ -50,4 +50,4 @@ export const HumArea: React.FC<HumAreaProps> = ({ data }) => {
   );
 };
 
-export default HumArea;
+export default HumidityArea;
