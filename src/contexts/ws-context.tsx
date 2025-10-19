@@ -1,9 +1,15 @@
 /* eslint-disable react-refresh/only-export-components */
 import type { ReactNode } from "react";
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { io, type Socket } from "socket.io-client";
 import { fetchDevices } from "../api/devices";
-import type { DeviceDto } from "../types/device";
 const TELEMETRY_TIMEOUT = 120_000;
 
 function disconnectSocket(s?: Socket | null) {
@@ -13,15 +19,6 @@ function disconnectSocket(s?: Socket | null) {
   } catch (e) {
     void e;
   }
-}
-
-function parseDevice(d: unknown): DeviceConfig | null {
-  if (!d || typeof d !== "object") return null;
-  const obj = d as Partial<DeviceDto & Record<string, unknown>>;
-  const name = typeof obj.deviceName === "string" ? obj.deviceName : "unknown";
-  const idVal = (obj.deviceKey ?? obj.id) as string | undefined;
-  if (!idVal || typeof idVal !== "string") return null;
-  return { name, deviceId: idVal } as DeviceConfig;
 }
 
 export interface DeviceConfig {
@@ -77,27 +74,58 @@ const WsContext = createContext<WsContextType | undefined>(undefined);
 
 export const WsProvider = ({ children }: { children: ReactNode }) => {
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>("");
-  const [wsStatus, setWsStatus] = useState<WSConnectionStatus>({ isConnected: false, isConnecting: false, connectionError: null });
-  const [telemetryData, setTelemetryData] = useState<TelemetryData>({ temperature: null, humidity: null, rainStatus: "unknown", servoStatus: "unknown", mode: "unknown" });
-  const [deviceStatuses, setDeviceStatuses] = useState<Record<string, DeviceStatus>>({});
+  const [wsStatus, setWsStatus] = useState<WSConnectionStatus>({
+    isConnected: false,
+    isConnecting: false,
+    connectionError: null,
+  });
+  const [telemetryData, setTelemetryData] = useState<TelemetryData>({
+    temperature: null,
+    humidity: null,
+    rainStatus: "unknown",
+    servoStatus: "unknown",
+    mode: "unknown",
+  });
+  const [deviceStatuses, setDeviceStatuses] = useState<
+    Record<string, DeviceStatus>
+  >({});
   const socketRef = useRef<Socket | null>(null);
-  const [availableDevicesState, setAvailableDevicesState] = useState<DeviceConfig[]>([]);
+  const [availableDevicesState, setAvailableDevicesState] = useState<
+    DeviceConfig[]
+  >([]);
   const availableDevices = availableDevicesState;
 
   const resetTelemetryData = useCallback(() => {
-    setTelemetryData({ temperature: null, humidity: null, rainStatus: "unknown", servoStatus: "unknown", mode: "unknown" });
+    setTelemetryData({
+      temperature: null,
+      humidity: null,
+      rainStatus: "unknown",
+      servoStatus: "unknown",
+      mode: "unknown",
+    });
   }, []);
 
-  const updateDeviceStatus = useCallback((deviceId: string, status: DeviceStatus) => {
-    setDeviceStatuses((prev) => ({ ...prev, [deviceId]: status }));
-  }, []);
+  const updateDeviceStatus = useCallback(
+    (deviceId: string, status: DeviceStatus) => {
+      setDeviceStatuses((prev) => ({ ...prev, [deviceId]: status }));
+    },
+    []
+  );
 
-  const updateWsStatus = useCallback((status: WSConnectionStatus) => setWsStatus(status), []);
+  const updateWsStatus = useCallback(
+    (status: WSConnectionStatus) => setWsStatus(status),
+    []
+  );
 
-  const updateTelemetryData = useCallback((data: TelemetryData) => setTelemetryData(data), []);
+  const updateTelemetryData = useCallback(
+    (data: TelemetryData) => setTelemetryData(data),
+    []
+  );
 
   const getSelectedDeviceConfig = useCallback((): DeviceConfig | undefined => {
-    return availableDevices.find((device) => device.deviceId === selectedDeviceId);
+    return availableDevices.find(
+      (device) => device.deviceId === selectedDeviceId
+    );
   }, [availableDevices, selectedDeviceId]);
 
   useEffect(() => {
@@ -107,14 +135,21 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
         const data = await fetchDevices();
         if (aborted) return;
         if (Array.isArray(data)) {
-          const configs: DeviceConfig[] = data.map(parseDevice).filter(Boolean) as DeviceConfig[];
+          const configs: DeviceConfig[] = data
+            .map((d) => ({
+              name: d.deviceName ?? "unknown",
+              deviceId: d.deviceKey ?? d.id,
+            }))
+            .filter(
+              (c) => c.deviceId && typeof c.deviceId === "string"
+            ) as DeviceConfig[];
           if (configs.length > 0) setAvailableDevicesState(configs);
         }
       } catch (e) {
         console.error("Error fetching devices:", e);
       }
     };
-  loadDevices();
+    loadDevices();
     return () => {
       aborted = true;
     };
@@ -122,11 +157,17 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
 
   const connectWS = useCallback(() => {
     if (!selectedDeviceId) return;
-    const deviceConfig = availableDevices.find((d) => d.deviceId === selectedDeviceId);
+    const deviceConfig = availableDevices.find(
+      (d) => d.deviceId === selectedDeviceId
+    );
     if (!deviceConfig) return;
     if (socketRef.current && socketRef.current.active) return;
 
-    setWsStatus({ isConnected: false, isConnecting: true, connectionError: null });
+    setWsStatus({
+      isConnected: false,
+      isConnecting: true,
+      connectionError: null,
+    });
     resetTelemetryData();
 
     if (socketRef.current) {
@@ -143,8 +184,15 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const markNoTelemetry = () => {
-      updateDeviceStatus(selectedDeviceId, { isConnected: false, lastSeen: null });
-      setWsStatus({ isConnected: false, isConnecting: false, connectionError: "No telemetry received for 2 minutes" });
+      updateDeviceStatus(selectedDeviceId, {
+        isConnected: false,
+        lastSeen: null,
+      });
+      setWsStatus({
+        isConnected: false,
+        isConnecting: false,
+        connectionError: "No telemetry received for 2 minutes",
+      });
       if (socketRef.current) {
         disconnectSocket(socketRef.current);
         socketRef.current = null;
@@ -152,45 +200,89 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
     };
 
     try {
-
-  const socketUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? window.location.origin;
-  const socket = io(socketUrl, { autoConnect: false, transports: ["websocket"] });
+      const socketUrl =
+        (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
+        window.location.origin;
+      const socket = io(socketUrl, {
+        autoConnect: false,
+        transports: ["websocket"],
+      });
 
       socket.on("connect", () => {
-        updateDeviceStatus(selectedDeviceId, { isConnected: true, lastSeen: Date.now() });
-        setWsStatus({ isConnected: true, isConnecting: false, connectionError: null });
-  clearTelemetryTimer();
-  telemetryTimer = window.setTimeout(markNoTelemetry, TELEMETRY_TIMEOUT) as unknown as number;
+        updateDeviceStatus(selectedDeviceId, {
+          isConnected: true,
+          lastSeen: Date.now(),
+        });
+        setWsStatus({
+          isConnected: true,
+          isConnecting: false,
+          connectionError: null,
+        });
+        clearTelemetryTimer();
+        telemetryTimer = window.setTimeout(
+          markNoTelemetry,
+          TELEMETRY_TIMEOUT
+        ) as unknown as number;
       });
 
-      socket.on("devices/telemetry", (payload: { deviceKey?: string; sensorData?: ISensorTelemetry | null }) => {
-        try {
-          if (!payload) return;
-          const { deviceKey, sensorData } = payload;
-          if (!deviceKey || !sensorData) return;
-          if (deviceKey !== selectedDeviceId) return;
+      socket.on(
+        "devices/telemetry",
+        (payload: {
+          deviceKey?: string;
+          sensorData?: ISensorTelemetry | null;
+        }) => {
+          try {
+            if (!payload) return;
+            const { deviceKey, sensorData } = payload;
+            if (!deviceKey || !sensorData) return;
+            if (deviceKey !== selectedDeviceId) return;
 
-          setTelemetryData((prev) => ({
-            ...prev,
-            ...(sensorData.temperature !== undefined && { temperature: Number(sensorData.temperature) }),
-            ...(sensorData.humidity !== undefined && { humidity: Number(sensorData.humidity) }),
-            ...(sensorData.rainStatus !== undefined && { rainStatus: sensorData.rainStatus === "RAIN" ? "rain" : "dry" }),
-            ...(sensorData.servoStatus !== undefined && { servoStatus: sensorData.servoStatus === "OPEN" ? "open" : "closed" }),
-            ...(sensorData.mode !== undefined && { mode: sensorData.mode === "MANUAL" ? "manual" : "auto" }),
-          }));
+            setTelemetryData((prev) => ({
+              ...prev,
+              ...(sensorData.temperature !== undefined && {
+                temperature: Number(sensorData.temperature),
+              }),
+              ...(sensorData.humidity !== undefined && {
+                humidity: Number(sensorData.humidity),
+              }),
+              ...(sensorData.rainStatus !== undefined && {
+                rainStatus: sensorData.rainStatus === "RAIN" ? "rain" : "dry",
+              }),
+              ...(sensorData.servoStatus !== undefined && {
+                servoStatus:
+                  sensorData.servoStatus === "OPEN" ? "open" : "closed",
+              }),
+              ...(sensorData.mode !== undefined && {
+                mode: sensorData.mode === "MANUAL" ? "manual" : "auto",
+              }),
+            }));
 
-          updateDeviceStatus(selectedDeviceId, { isConnected: true, lastSeen: Date.now() });
-          clearTelemetryTimer();
-          telemetryTimer = window.setTimeout(markNoTelemetry, TELEMETRY_TIMEOUT) as unknown as number;
-        } catch (err) {
-          console.error("Error handling telemetry payload:", err);
+            updateDeviceStatus(selectedDeviceId, {
+              isConnected: true,
+              lastSeen: Date.now(),
+            });
+            clearTelemetryTimer();
+            telemetryTimer = window.setTimeout(
+              markNoTelemetry,
+              TELEMETRY_TIMEOUT
+            ) as unknown as number;
+          } catch (err) {
+            console.error("Error handling telemetry payload:", err);
+          }
         }
-      });
+      );
 
       socket.on("connect_error", (err: Error) => {
         console.error("Socket connect_error", err);
-  setWsStatus({ isConnected: false, isConnecting: false, connectionError: err.message || "Connection failed" });
-        updateDeviceStatus(selectedDeviceId, { isConnected: false, lastSeen: null });
+        setWsStatus({
+          isConnected: false,
+          isConnecting: false,
+          connectionError: err.message || "Connection failed",
+        });
+        updateDeviceStatus(selectedDeviceId, {
+          isConnected: false,
+          lastSeen: null,
+        });
         resetTelemetryData();
         clearTelemetryTimer();
         if (socketRef.current) {
@@ -211,8 +303,15 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
           message = String(err);
         }
         console.error("Socket error", err);
-        setWsStatus({ isConnected: false, isConnecting: false, connectionError: message });
-        updateDeviceStatus(selectedDeviceId, { isConnected: false, lastSeen: null });
+        setWsStatus({
+          isConnected: false,
+          isConnecting: false,
+          connectionError: message,
+        });
+        updateDeviceStatus(selectedDeviceId, {
+          isConnected: false,
+          lastSeen: null,
+        });
         resetTelemetryData();
         clearTelemetryTimer();
         try {
@@ -224,8 +323,15 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
       });
 
       socket.on("disconnect", (reason: string) => {
-        setWsStatus({ isConnected: false, isConnecting: false, connectionError: `Disconnected: ${reason}` });
-        updateDeviceStatus(selectedDeviceId, { isConnected: false, lastSeen: null });
+        setWsStatus({
+          isConnected: false,
+          isConnecting: false,
+          connectionError: `Disconnected: ${reason}`,
+        });
+        updateDeviceStatus(selectedDeviceId, {
+          isConnected: false,
+          lastSeen: null,
+        });
         resetTelemetryData();
         clearTelemetryTimer();
       });
@@ -234,17 +340,31 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
       socket.connect();
     } catch (e) {
       console.error("Connect error:", e);
-      setWsStatus({ isConnected: false, isConnecting: false, connectionError: e instanceof Error ? e.message : "Connection failed" });
-      updateDeviceStatus(selectedDeviceId, { isConnected: false, lastSeen: null });
+      setWsStatus({
+        isConnected: false,
+        isConnecting: false,
+        connectionError: e instanceof Error ? e.message : "Connection failed",
+      });
+      updateDeviceStatus(selectedDeviceId, {
+        isConnected: false,
+        lastSeen: null,
+      });
       resetTelemetryData();
     }
-  }, [availableDevices, selectedDeviceId, resetTelemetryData, updateDeviceStatus]);
-
+  }, [
+    availableDevices,
+    selectedDeviceId,
+    resetTelemetryData,
+    updateDeviceStatus,
+  ]);
 
   const publishMode = useCallback(
     (mode: "auto" | "manual") => {
       if (socketRef.current && wsStatus.isConnected && selectedDeviceId) {
-        socketRef.current.emit("devices/command/mode", { deviceKey: selectedDeviceId, mode: mode === "manual" ? "MANUAL" : "AUTO" });
+        socketRef.current.emit("devices/command/mode", {
+          deviceKey: selectedDeviceId,
+          mode: mode === "manual" ? "MANUAL" : "AUTO",
+        });
         setTelemetryData((prev) => ({ ...prev, mode }));
       }
     },
@@ -254,16 +374,17 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
   const publishServo = useCallback(
     (cmd: "open" | "close") => {
       if (socketRef.current && wsStatus.isConnected && selectedDeviceId) {
-        socketRef.current.emit("devices/command/servo", { deviceKey: selectedDeviceId, cmd: cmd === "open" ? "OPEN" : "CLOSE" });
+        socketRef.current.emit("devices/command/servo", {
+          deviceKey: selectedDeviceId,
+          cmd: cmd === "open" ? "OPEN" : "CLOSE",
+        });
         console.log(`Servo command sent: ${cmd}`);
       }
     },
     [wsStatus.isConnected, selectedDeviceId]
   );
 
-
   useEffect(() => {
-    
     if (socketRef.current) {
       try {
         socketRef.current.disconnect();
@@ -273,16 +394,24 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
       socketRef.current = null;
     }
 
-    setWsStatus({ isConnected: false, isConnecting: false, connectionError: null });
+    setWsStatus({
+      isConnected: false,
+      isConnecting: false,
+      connectionError: null,
+    });
     resetTelemetryData();
 
-    
     if (selectedDeviceId) {
       setDeviceStatuses((prev) => {
         const typedPrev = prev as Record<string, DeviceStatus>;
-        const existing = typedPrev[selectedDeviceId] as DeviceStatus | undefined;
+        const existing = typedPrev[selectedDeviceId] as
+          | DeviceStatus
+          | undefined;
         if (existing) return prev;
-        return { ...typedPrev, [selectedDeviceId]: { isConnected: false, lastSeen: null } };
+        return {
+          ...typedPrev,
+          [selectedDeviceId]: { isConnected: false, lastSeen: null },
+        };
       });
     }
 
@@ -336,9 +465,16 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
       socketRef.current = null;
     }
     if (selectedDeviceId) {
-      updateDeviceStatus(selectedDeviceId, { isConnected: false, lastSeen: null });
+      updateDeviceStatus(selectedDeviceId, {
+        isConnected: false,
+        lastSeen: null,
+      });
     }
-    setWsStatus({ isConnected: false, isConnecting: false, connectionError: null });
+    setWsStatus({
+      isConnected: false,
+      isConnecting: false,
+      connectionError: null,
+    });
     resetTelemetryData();
   }, [resetTelemetryData, selectedDeviceId, updateDeviceStatus]);
 
