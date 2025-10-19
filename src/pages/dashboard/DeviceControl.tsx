@@ -6,8 +6,10 @@ import { useDevice } from "@/contexts/device-context";
 import { AlertCircle } from "lucide-react";
 
 export default function DeviceControl() {
-  const { wsStatus, telemetryData, publishMode, publishServo } = useDevice();
-  const connected = wsStatus.isConnected;
+  const { telemetryData, publishMode, publishServo, getSelectedDevice } =
+    useDevice();
+  const selectedDevice = getSelectedDevice();
+  const connected = selectedDevice?.isConnected ?? false;
   const telemetry = telemetryData;
 
   const getModeIcon = () => {
@@ -68,7 +70,11 @@ export default function DeviceControl() {
 
             <div className="text-center mb-6">
               <Badge
-                variant={telemetry.mode === "auto" ? "default" : "secondary"}
+                variant={
+                  connected && telemetry.mode === "auto"
+                    ? "default"
+                    : "secondary"
+                }
                 className="text-lg py-2 px-4"
               >
                 {connected ? telemetry.mode?.toUpperCase() : "UNKNOWN"}
@@ -79,7 +85,9 @@ export default function DeviceControl() {
               <Button
                 onClick={() => publishMode("auto")}
                 disabled={!connected || telemetry.mode === "auto"}
-                variant={telemetry.mode === "auto" ? "default" : "outline"}
+                variant={
+                  connected && telemetry.mode === "auto" ? "default" : "outline"
+                }
                 className="w-full"
               >
                 🤖 Auto Mode
@@ -87,7 +95,11 @@ export default function DeviceControl() {
               <Button
                 onClick={() => publishMode("manual")}
                 disabled={!connected || telemetry.mode === "manual"}
-                variant={telemetry.mode === "manual" ? "default" : "outline"}
+                variant={
+                  connected && telemetry.mode === "manual"
+                    ? "default"
+                    : "outline"
+                }
                 className="w-full"
               >
                 👤 Manual Mode
@@ -108,7 +120,7 @@ export default function DeviceControl() {
 
             <div className="text-center mb-6">
               <Badge
-                variant={isServoOpen ? "default" : "secondary"}
+                variant={connected && isServoOpen ? "default" : "secondary"}
                 className="text-lg py-2 px-4"
               >
                 {connected ? telemetry.servoStatus : "UNKNOWN"}
@@ -119,7 +131,7 @@ export default function DeviceControl() {
               <Button
                 onClick={() => publishServo("open")}
                 disabled={!canControlServo || isServoOpen}
-                variant={isServoOpen ? "default" : "outline"}
+                variant={connected && isServoOpen ? "default" : "outline"}
                 className="w-full"
               >
                 🔓 Open Canopy
@@ -127,7 +139,7 @@ export default function DeviceControl() {
               <Button
                 onClick={() => publishServo("close")}
                 disabled={!canControlServo || !isServoOpen}
-                variant={!isServoOpen ? "default" : "outline"}
+                variant={connected && !isServoOpen ? "default" : "outline"}
                 className="w-full"
               >
                 🔒 Close Canopy
