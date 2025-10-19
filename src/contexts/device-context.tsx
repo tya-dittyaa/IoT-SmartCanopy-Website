@@ -18,8 +18,8 @@ function disconnectSocket(s?: Socket | null) {
   if (!s) return;
   try {
     s.disconnect();
-  } catch (e) {
-    void e;
+  } catch {
+    // ignore
   }
 }
 
@@ -184,12 +184,18 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
+  const reconnectTimerRef = useRef<number | null>(null);
+  const shouldAutoReconnectRef = useRef(true);
+  const monitoringDeviceIdRef = useRef<string | null>(null);
+
+  const clearReconnectTimer = () => {
+    if (reconnectTimerRef.current) {
+      window.clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+  };
+
   const connectWS = useCallback(() => {
-    if (!selectedDeviceId) return;
-    const deviceItem = availableDevices.find(
-      (d) => d.deviceId === selectedDeviceId
-    );
-    if (!deviceItem) return;
     if (socketRef.current && socketRef.current.active) return;
 
     setWsStatus({
@@ -213,10 +219,12 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const markNoTelemetry = () => {
-      updateDeviceStatus(selectedDeviceId, {
-        isConnected: false,
-        lastSeen: null,
-      });
+      if (selectedDeviceId) {
+        updateDeviceStatus(selectedDeviceId, {
+          isConnected: false,
+          lastSeen: null,
+        });
+      }
       setWsStatus({
         isConnected: false,
         isConnecting: false,
@@ -235,13 +243,19 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
       const socket = io(socketUrl, {
         autoConnect: false,
         transports: ["websocket"],
+        reconnection: false,
       });
 
       socket.on("connect", () => {
-        updateDeviceStatus(selectedDeviceId, {
-          isConnected: true,
-          lastSeen: Date.now(),
-        });
+        if (
+          monitoringDeviceIdRef.current &&
+          selectedDeviceId === monitoringDeviceIdRef.current
+        ) {
+          updateDeviceStatus(selectedDeviceId, {
+            isConnected: true,
+            lastSeen: Date.now(),
+          });
+        }
         setWsStatus({
           isConnected: true,
           isConnecting: false,
@@ -252,6 +266,7 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
           markNoTelemetry,
           TELEMETRY_TIMEOUT
         ) as unknown as number;
+        clearReconnectTimer();
       });
 
       socket.on(
@@ -264,8 +279,14 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
             if (!payload) return;
             const { deviceKey, sensorData } = payload;
             if (!deviceKey || !sensorData) return;
-            if (deviceKey !== selectedDeviceId) return;
 
+            if (selectedDeviceId && deviceKey !== selectedDeviceId) return;
+
+            if (
+              !monitoringDeviceIdRef.current ||
+              monitoringDeviceIdRef.current !== deviceKey
+            )
+              return;
             setTelemetryData((prev) => ({
               ...prev,
               ...(sensorData.temperature !== undefined && {
@@ -286,7 +307,7 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
               }),
             }));
 
-            updateDeviceStatus(selectedDeviceId, {
+            updateDeviceStatus(deviceKey, {
               isConnected: true,
               lastSeen: Date.now(),
             });
@@ -301,26 +322,42 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
         }
       );
 
-      socket.on("connect_error", (err: Error) => {
-        console.error("Socket connect_error", err);
+      const handleConnectionError = (message?: string) => {
+        console.error("Socket connection failure", message ?? "");
         setWsStatus({
           isConnected: false,
           isConnecting: false,
-          connectionError: err.message || "Connection failed",
+          connectionError: message ?? "Connection failed",
         });
-        updateDeviceStatus(selectedDeviceId, {
-          isConnected: false,
-          lastSeen: null,
-        });
+        if (selectedDeviceId)
+          updateDeviceStatus(selectedDeviceId, {
+            isConnected: false,
+            lastSeen: null,
+          });
         resetTelemetryData();
         clearTelemetryTimer();
-        if (socketRef.current) {
-          try {
-            socketRef.current.disconnect();
-          } catch (e) {
-            void e;
-          }
+
+        if (shouldAutoReconnectRef.current) {
+          clearReconnectTimer();
+          reconnectTimerRef.current = window.setTimeout(() => {
+            reconnectTimerRef.current = null;
+            try {
+              connectWS();
+            } catch {
+              // swallow
+            }
+          }, 5000) as unknown as number;
         }
+      };
+
+      socket.on("connect_error", (err: Error) => {
+        handleConnectionError(err?.message ?? String(err));
+        try {
+          socket.disconnect();
+        } catch {
+          // ignore
+        }
+        socketRef.current = null;
       });
 
       socket.on("error", (err: unknown) => {
@@ -331,22 +368,11 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
         } else if (err) {
           message = String(err);
         }
-        console.error("Socket error", err);
-        setWsStatus({
-          isConnected: false,
-          isConnecting: false,
-          connectionError: message,
-        });
-        updateDeviceStatus(selectedDeviceId, {
-          isConnected: false,
-          lastSeen: null,
-        });
-        resetTelemetryData();
-        clearTelemetryTimer();
+        handleConnectionError(message);
         try {
           socket.disconnect();
-        } catch (e) {
-          void e;
+        } catch {
+          // ignore
         }
         socketRef.current = null;
       });
@@ -357,12 +383,24 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
           isConnecting: false,
           connectionError: `Disconnected: ${reason}`,
         });
-        updateDeviceStatus(selectedDeviceId, {
-          isConnected: false,
-          lastSeen: null,
-        });
+        if (selectedDeviceId)
+          updateDeviceStatus(selectedDeviceId, {
+            isConnected: false,
+            lastSeen: null,
+          });
         resetTelemetryData();
         clearTelemetryTimer();
+        if (shouldAutoReconnectRef.current) {
+          clearReconnectTimer();
+          reconnectTimerRef.current = window.setTimeout(() => {
+            reconnectTimerRef.current = null;
+            try {
+              connectWS();
+            } catch {
+              // ignore
+            }
+          }, 5000) as unknown as number;
+        }
       });
 
       socketRef.current = socket;
@@ -374,18 +412,26 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
         isConnecting: false,
         connectionError: e instanceof Error ? e.message : "Connection failed",
       });
-      updateDeviceStatus(selectedDeviceId, {
-        isConnected: false,
-        lastSeen: null,
-      });
+      if (selectedDeviceId)
+        updateDeviceStatus(selectedDeviceId, {
+          isConnected: false,
+          lastSeen: null,
+        });
       resetTelemetryData();
+
+      if (shouldAutoReconnectRef.current) {
+        clearReconnectTimer();
+        reconnectTimerRef.current = window.setTimeout(() => {
+          reconnectTimerRef.current = null;
+          try {
+            connectWS();
+          } catch {
+            // ignore
+          }
+        }, 5000) as unknown as number;
+      }
     }
-  }, [
-    availableDevices,
-    selectedDeviceId,
-    resetTelemetryData,
-    updateDeviceStatus,
-  ]);
+  }, [selectedDeviceId, resetTelemetryData, updateDeviceStatus]);
 
   const publishMode = useCallback(
     (mode: "auto" | "manual") => {
@@ -414,20 +460,7 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
   );
 
   useEffect(() => {
-    if (socketRef.current) {
-      try {
-        socketRef.current.disconnect();
-      } catch {
-        // ignore
-      }
-      socketRef.current = null;
-    }
-
-    setWsStatus({
-      isConnected: false,
-      isConnecting: false,
-      connectionError: null,
-    });
+    setWsStatus((prev) => ({ ...prev, connectionError: null }));
     resetTelemetryData();
 
     if (selectedDeviceId) {
@@ -445,16 +478,7 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
       });
     }
 
-    return () => {
-      if (socketRef.current) {
-        try {
-          socketRef.current.disconnect();
-        } catch {
-          // ignore
-        }
-        socketRef.current = null;
-      }
-    };
+    return undefined;
   }, [selectedDeviceId, resetTelemetryData]);
 
   useEffect(() => {
@@ -481,31 +505,45 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
 
   const connectToDevice = useCallback(() => {
     if (!selectedDeviceId) return;
+    monitoringDeviceIdRef.current = selectedDeviceId;
     setWsStatus((prev) => ({ ...prev, connectionError: null }));
-    connectWS();
-  }, [connectWS, selectedDeviceId]);
+    updateDeviceStatus(selectedDeviceId, {
+      isConnected: true,
+      lastSeen: Date.now(),
+    });
+
+    resetTelemetryData();
+  }, [resetTelemetryData, selectedDeviceId, updateDeviceStatus]);
 
   const disconnectFromDevice = useCallback(() => {
-    if (socketRef.current) {
-      try {
-        socketRef.current.disconnect();
-      } catch {
-        // ignore
-      }
-      socketRef.current = null;
-    }
-    if (selectedDeviceId)
+    if (selectedDeviceId) {
       updateDeviceStatus(selectedDeviceId, {
         isConnected: false,
         lastSeen: null,
       });
-    setWsStatus({
-      isConnected: false,
-      isConnecting: false,
-      connectionError: null,
-    });
+      if (monitoringDeviceIdRef.current === selectedDeviceId)
+        monitoringDeviceIdRef.current = null;
+    }
+    setWsStatus((prev) => ({ ...prev, connectionError: null }));
     resetTelemetryData();
   }, [resetTelemetryData, selectedDeviceId, updateDeviceStatus]);
+
+  useEffect(() => {
+    shouldAutoReconnectRef.current = true;
+    connectWS();
+    return () => {
+      shouldAutoReconnectRef.current = false;
+      clearReconnectTimer();
+      if (socketRef.current) {
+        try {
+          socketRef.current.disconnect();
+        } catch {
+          // ignore
+        }
+        socketRef.current = null;
+      }
+    };
+  }, [connectWS]);
 
   return (
     <DeviceContext.Provider
