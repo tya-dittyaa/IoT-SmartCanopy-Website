@@ -218,15 +218,15 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
           lastSeen: null,
         });
       }
-      setWsStatus({
-        isConnected: false,
+
+      setWsStatus((prev) => ({
+        ...prev,
+        isConnected: socketRef.current
+          ? !!socketRef.current.connected
+          : prev.isConnected,
         isConnecting: false,
         connectionError: "No telemetry received for 2 minutes",
-      });
-      if (socketRef.current) {
-        disconnectSocket(socketRef.current);
-        socketRef.current = null;
-      }
+      }));
     };
 
     try {
