@@ -24,24 +24,26 @@ import CombinedArea from "@/components/charts/combined-area";
 import HumidityArea from "@/components/charts/humidity-area";
 import TemperatureArea from "@/components/charts/temperature-area";
 import { useDevice } from "@/contexts/device-context";
+import RANGES, { RANGE_TO_MINUTES, type Range } from "@/types/range";
 import type { TelemetryDto } from "@/types/telemetry";
 
 const tempDataInit: Array<{ time: string; temp: number }> = [];
 const humidityDataInit: Array<{ time: string; hum: number }> = [];
 
 export default function GraphMonitoring() {
-  const [selectedRange, setSelectedRange] = useState<
-    "15m" | "30m" | "1h" | "6h" | "1d" | "7d"
-  >("15m");
+  const [selectedRange, setSelectedRange] = useState<Range>("15m");
 
   const [tempData, setTempData] =
     useState<Array<{ time: string; temp: number }>>(tempDataInit);
   const [humidityData, setHumidityData] =
     useState<Array<{ time: string; hum: number }>>(humidityDataInit);
 
-  const { selectedDeviceId, wsStatus } = useDevice();
+  const { selectedDeviceId, wsStatus, getSelectedDevice } = useDevice();
 
   const isConnected = wsStatus?.isConnected ?? false;
+  const selectedDevice = getSelectedDevice();
+  const deviceIsConnected = selectedDevice?.isConnected ?? false;
+  const canFetch = !!selectedDeviceId && isConnected && deviceIsConnected;
 
   const filteredTempData = useMemo(() => tempData, [tempData]);
   const filteredHumidityData = useMemo(() => humidityData, [humidityData]);
@@ -60,19 +62,10 @@ export default function GraphMonitoring() {
     let mounted = true;
 
     try {
-      const rangeToMinutes: Record<string, number> = {
-        "15m": 15,
-        "30m": 30,
-        "1h": 60,
-        "6h": 60 * 6,
-        "1d": 60 * 24,
-        "7d": 60 * 24 * 7,
-      };
-
-      const minutes = rangeToMinutes[selectedRange] ?? 1000;
+      const minutes = RANGE_TO_MINUTES[selectedRange] ?? 1000;
       const deviceKey = selectedDeviceId;
 
-      if (!deviceKey || !isConnected) {
+      if (!deviceKey || !canFetch) {
         setTempData([]);
         setHumidityData([]);
         return;
@@ -103,10 +96,10 @@ export default function GraphMonitoring() {
     return () => {
       mounted = false;
     };
-  }, [selectedRange, selectedDeviceId, isConnected]);
+  }, [selectedRange, selectedDeviceId, canFetch]);
 
   useEffect(() => {
-    if (!selectedDeviceId || !isConnected) {
+    if (!canFetch) {
       setNextRefresh(REFRESH_INTERVAL);
       return;
     }
@@ -125,18 +118,19 @@ export default function GraphMonitoring() {
     }, 1000);
 
     return () => clearInterval(tick);
-  }, [fetchTelemetry, selectedDeviceId, isConnected]);
+  }, [fetchTelemetry, selectedDeviceId, canFetch]);
 
-  const ranges = ["15m", "30m", "1h", "6h", "1d", "7d"] as const;
+  const ranges = RANGES;
 
   return (
     <div className="space-y-6">
-      {!isConnected && (
+      {!canFetch && (
         <Alert className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950/50">
           <AlertCircle className="h-4 w-4 text-yellow-600" />
           <AlertDescription className="text-yellow-700 dark:text-yellow-300">
-            No device connected. Please select a device and connect to view
-            graph data.
+            {isConnected && !deviceIsConnected
+              ? "Selected device is offline. Please ensure the device is connected to view graph data."
+              : "No device connected. Please select a device and connect to view graph data."}
           </AlertDescription>
         </Alert>
       )}
@@ -154,13 +148,20 @@ export default function GraphMonitoring() {
             defaultValue="15m"
             value={selectedRange}
             onValueChange={(v: string) =>
-              setSelectedRange(v as "15m" | "30m" | "1h" | "6h" | "1d" | "7d")
+              canFetch && setSelectedRange(v as Range)
             }
-            className="w-full md:w-[520px]"
+            className={`w-full md:w-[520px] ${
+              !canFetch ? "opacity-70 pointer-events-none" : ""
+            }`}
           >
             <TabsList className="gap-2 p-1">
               {ranges.map((r) => (
-                <TabsTrigger key={r} value={r} className="px-3 py-1 text-base">
+                <TabsTrigger
+                  key={r}
+                  value={r}
+                  className="px-3 py-1 text-base"
+                  disabled={!canFetch}
+                >
                   {r}
                 </TabsTrigger>
               ))}
@@ -168,27 +169,28 @@ export default function GraphMonitoring() {
           </Tabs>
         </div>
 
-        <div className="flex items-center gap-3 text-sm text-muted-foreground mt-2 md:mt-0 md:ml-4 w-full md:w-auto justify-between md:justify-end">
-          <div className="flex-1 md:flex-none md:text-right">
-            {selectedDeviceId && isConnected
-              ? `Refresh in ${nextRefresh}s`
-              : "Refresh paused"}
-          </div>
-          <div className="flex-none">
+        <div className="flex items-center gap-3 text-sm text-muted-foreground mt-2 md:mt-0 md:ml-4 w-full md:w-auto justify-start md:justify-end">
+          <div className="flex-none order-1 md:order-2">
             <button
               type="button"
               onClick={() => {
-                if (!selectedDeviceId || !isConnected) return;
+                if (!selectedDeviceId || !canFetch) return;
                 void fetchTelemetry();
                 setNextRefresh(REFRESH_INTERVAL);
               }}
-              disabled={!selectedDeviceId || !isConnected}
+              disabled={!selectedDeviceId || !canFetch}
               aria-label="Refresh now"
               title="Refresh now"
               className="p-2 rounded bg-slate-100 text-slate-800 disabled:opacity-50 dark:bg-slate-800 dark:text-slate-100"
             >
               <RefreshCw className="h-4 w-4" />
             </button>
+          </div>
+
+          <div className="flex-1 md:flex-none md:text-right order-2 md:order-1">
+            {selectedDeviceId && canFetch
+              ? `Refresh in ${nextRefresh}s`
+              : "Refresh paused"}
           </div>
         </div>
       </div>
