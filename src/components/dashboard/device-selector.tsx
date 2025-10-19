@@ -53,9 +53,9 @@ export default function DeviceSelector({
             aria-expanded={open}
             className="w-full justify-between text-sm h-10"
             size="default"
-            disabled={false}
+            disabled={availableDevices.length === 0}
           >
-            {getSelectedDeviceStatus()}
+            {availableDevices.length === 0 ? "No device available" : getSelectedDeviceStatus()}
             <ChevronsUpDownIcon className="ml-2 h-3 w-3 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>

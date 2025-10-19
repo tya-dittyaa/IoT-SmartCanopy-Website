@@ -89,7 +89,9 @@ export function IoTDashboardSidebar({
                   <Radio className={`h-4 w-4 ${selectedDeviceStatus?.isConnected ? "text-green-500" : "text-red-500"}`} />
                   <span className="text-sm">Device Connection</span>
                 </div>
-                <div className="text-[11px] text-muted-foreground ml-6 lowercase">Last Seen: {selectedDeviceStatus?.lastSeen ? new Date(selectedDeviceStatus.lastSeen).toLocaleTimeString() : "not seen"}</div>
+                {selectedDeviceStatus?.isConnected && selectedDeviceStatus.lastSeen ? (
+                  <div className="text-[11px] text-muted-foreground ml-6 lowercase">Last Seen: {new Date(selectedDeviceStatus.lastSeen).toLocaleTimeString()}</div>
+                ) : null}
               </div>
             </div>
           </SidebarGroupContent>
