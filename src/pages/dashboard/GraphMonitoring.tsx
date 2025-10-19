@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -12,14 +11,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { ChartConfig } from "@/components/ui/chart";
-import {
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle, RefreshCw } from "lucide-react";
 
@@ -29,16 +20,14 @@ import {
   fetchHumidityTelemetry,
   fetchTemperatureTelemetry,
 } from "@/api/telemetries";
+import CombinedArea from "@/components/charts/combined-area";
+import HumArea from "@/components/charts/hum-area";
+import TempArea from "@/components/charts/temp-area";
 import { useDevice } from "@/contexts/device-context";
 import type { TelemetryDto } from "@/types/telemetry";
 
 const tempDataInit: Array<{ time: string; temp: number }> = [];
 const humidityDataInit: Array<{ time: string; hum: number }> = [];
-
-const chartConfig = {
-  temp: { label: "Temperature (°C)", color: "#ef4444" },
-  hum: { label: "Humidity (%)", color: "#3b82f6" },
-} satisfies ChartConfig;
 
 export default function GraphMonitoring() {
   const [selectedRange, setSelectedRange] = useState<
@@ -214,35 +203,7 @@ export default function GraphMonitoring() {
             </div>
           </CardHeader>
           <CardContent className="flex-1">
-            <ChartContainer config={{ temp: chartConfig.temp }}>
-              <AreaChart
-                data={filteredTempData}
-                margin={{ left: 12, right: 12 }}
-              >
-                <CartesianGrid vertical={false} />
-                <XAxis
-                  dataKey="time"
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                />
-                <YAxis yAxisId="left" domain={["dataMin - 2", "dataMax + 2"]} />
-                <ChartTooltip
-                  cursor={false}
-                  content={<ChartTooltipContent indicator="line" />}
-                />
-                <ChartLegend content={<ChartLegendContent />} />
-                <Area
-                  yAxisId="left"
-                  dataKey="temp"
-                  name="(°C)"
-                  type="natural"
-                  fill="var(--color-temp)"
-                  fillOpacity={0.4}
-                  stroke="var(--color-temp)"
-                />
-              </AreaChart>
-            </ChartContainer>
+            <TempArea data={filteredTempData} />
           </CardContent>
           <CardFooter>
             <div className="flex w-full items-center gap-2 text-sm">
@@ -262,35 +223,7 @@ export default function GraphMonitoring() {
             </div>
           </CardHeader>
           <CardContent className="flex-1">
-            <ChartContainer config={{ hum: chartConfig.hum }}>
-              <AreaChart
-                data={filteredHumidityData}
-                margin={{ left: 12, right: 12 }}
-              >
-                <CartesianGrid vertical={false} />
-                <XAxis
-                  dataKey="time"
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                />
-                <YAxis yAxisId="left" domain={["dataMin - 5", "dataMax + 5"]} />
-                <ChartTooltip
-                  cursor={false}
-                  content={<ChartTooltipContent indicator="line" />}
-                />
-                <ChartLegend content={<ChartLegendContent />} />
-                <Area
-                  yAxisId="left"
-                  dataKey="hum"
-                  name="(%)"
-                  type="natural"
-                  fill="var(--color-hum)"
-                  fillOpacity={0.4}
-                  stroke="var(--color-hum)"
-                />
-              </AreaChart>
-            </ChartContainer>
+            <HumArea data={filteredHumidityData} />
           </CardContent>
           <CardFooter>
             <div className="flex w-full items-center gap-2 text-sm">
@@ -310,58 +243,13 @@ export default function GraphMonitoring() {
             </div>
           </CardHeader>
           <CardContent className="flex-1">
-            <ChartContainer
-              config={{ temp: chartConfig.temp, hum: chartConfig.hum }}
-            >
-              <AreaChart
-                data={filteredTempData.map((d, i) => ({
-                  time: d.time,
-                  temp: d.temp,
-                  hum: filteredHumidityData[i]?.hum,
-                }))}
-                margin={{ left: 12, right: 12 }}
-              >
-                <CartesianGrid vertical={false} />
-                <XAxis
-                  dataKey="time"
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                />
-                <YAxis yAxisId="left" domain={["dataMin - 2", "dataMax + 2"]} />
-                <YAxis
-                  yAxisId="right"
-                  orientation="right"
-                  domain={["dataMin - 5", "dataMax + 5"]}
-                />
-
-                <ChartTooltip
-                  cursor={false}
-                  content={<ChartTooltipContent indicator="line" />}
-                />
-                <ChartLegend content={<ChartLegendContent />} />
-
-                <Area
-                  yAxisId="left"
-                  dataKey="temp"
-                  name="(°C)"
-                  type="natural"
-                  fill="var(--color-temp)"
-                  fillOpacity={0.4}
-                  stroke="var(--color-temp)"
-                />
-
-                <Area
-                  yAxisId="right"
-                  dataKey="hum"
-                  name="(%)"
-                  type="natural"
-                  fill="var(--color-hum)"
-                  fillOpacity={0.4}
-                  stroke="var(--color-hum)"
-                />
-              </AreaChart>
-            </ChartContainer>
+            <CombinedArea
+              data={filteredTempData.map((d, i) => ({
+                time: d.time,
+                temp: d.temp,
+                hum: filteredHumidityData[i]?.hum,
+              }))}
+            />
           </CardContent>
           <CardFooter>
             <div className="flex w-full items-center justify-between gap-2 text-sm">
