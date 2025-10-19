@@ -6,10 +6,16 @@ import { useDevice } from "@/contexts/device-context";
 import { AlertCircle } from "lucide-react";
 
 export default function DeviceControl() {
-  const { telemetryData, publishMode, publishServo, getSelectedDevice } =
-    useDevice();
+  const {
+    telemetryData,
+    publishMode,
+    publishServo,
+    getSelectedDevice,
+    wsStatus,
+  } = useDevice();
   const selectedDevice = getSelectedDevice();
-  const connected = selectedDevice?.isConnected ?? false;
+  const deviceConnected = selectedDevice?.isConnected ?? false;
+  const connected = deviceConnected && wsStatus.isConnected;
   const telemetry = telemetryData;
 
   const getModeIcon = () => {
