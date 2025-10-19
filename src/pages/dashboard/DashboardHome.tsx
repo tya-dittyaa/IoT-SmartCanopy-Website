@@ -51,7 +51,11 @@ export default function DashboardHome() {
                   <strong className="text-gray-900 dark:text-white">
                     Live Monitoring
                   </strong>{" "}
-                  for sensor data
+                  for real-time sensor data, or go to{" "}
+                  <strong className="text-gray-900 dark:text-white">
+                    Graph Monitoring
+                  </strong>{" "}
+                  to view historical trends.
                 </p>
               </div>
 

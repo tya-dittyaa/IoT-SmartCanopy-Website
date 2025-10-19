@@ -1,22 +1,20 @@
-import {
-  HumidityRadial,
-  TemperatureRadial,
-} from "@/components/charts/radial-charts";
+import { HumidityRadial } from "@/components/charts/humidity-radial";
+import { TemperatureRadial } from "@/components/charts/temperature-radial";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useMqtt } from "@/contexts/mqtt-context";
+import { useDevice } from "@/contexts/device-context";
 import { AlertCircle } from "lucide-react";
 
 export default function LiveMonitoring() {
-  const { mqttStatus, telemetryData } = useMqtt();
-  const connected = mqttStatus.isConnected;
+  const { wsStatus, telemetryData } = useDevice();
+  const connected = wsStatus.isConnected;
   const telemetry = telemetryData;
 
   const getRainStatusIcon = () => {
     switch (telemetry.rainStatus) {
-      case "RAIN":
+      case "rain":
         return "🌧️";
-      case "DRY":
+      case "dry":
         return "☀️";
       default:
         return "❓";
@@ -25,9 +23,9 @@ export default function LiveMonitoring() {
 
   const getServoStatusIcon = () => {
     switch (telemetry.servoStatus) {
-      case "OPEN":
+      case "open":
         return "🔓";
-      case "CLOSED":
+      case "closed":
         return "🔒";
       default:
         return "❓";
@@ -54,9 +52,9 @@ export default function LiveMonitoring() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 auto-rows-fr">
         {/* Temperature */}
-        <Card className="flex flex-col">
+        <Card className="flex flex-col h-full">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">Temperature</CardTitle>
           </CardHeader>
@@ -75,7 +73,7 @@ export default function LiveMonitoring() {
         </Card>
 
         {/* Humidity */}
-        <Card className="flex flex-col">
+        <Card className="flex flex-col h-full">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">Humidity</CardTitle>
           </CardHeader>
@@ -92,7 +90,7 @@ export default function LiveMonitoring() {
         </Card>
 
         {/* Rain Status */}
-        <Card className="flex flex-col">
+        <Card className="flex flex-col h-full">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">Rain Status</CardTitle>
           </CardHeader>
@@ -112,7 +110,7 @@ export default function LiveMonitoring() {
         </Card>
 
         {/* Canopy Status */}
-        <Card className="flex flex-col">
+        <Card className="flex flex-col h-full">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">Canopy Status</CardTitle>
           </CardHeader>
