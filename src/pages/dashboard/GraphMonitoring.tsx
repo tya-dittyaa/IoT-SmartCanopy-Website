@@ -21,7 +21,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, RefreshCw } from "lucide-react";
 
 export const description = "Graph monitoring for Temperature and Humidity";
 
@@ -145,6 +145,12 @@ export default function GraphMonitoring() {
   }, [selectedRange, selectedDeviceId, isConnected]);
 
   useEffect(() => {
+    // only run polling when a device is selected and connected
+    if (!selectedDeviceId || !isConnected) {
+      setNextRefresh(REFRESH_INTERVAL);
+      return;
+    }
+
     // trigger immediate fetch
     void fetchTelemetry();
     setNextRefresh(REFRESH_INTERVAL);
@@ -162,7 +168,7 @@ export default function GraphMonitoring() {
     }, 1000);
 
     return () => clearInterval(tick);
-  }, [fetchTelemetry]);
+  }, [fetchTelemetry, selectedDeviceId, isConnected]);
 
   // Available range options for the tabs (typed)
   const ranges = ["15m", "30m", "1h", "6h", "1d", "7d"] as const;
@@ -188,16 +194,16 @@ export default function GraphMonitoring() {
       </div>
 
       {/* Global time-range tabs that affect all three charts —
-          layout: stacked on mobile, inline (tabs + refresh) on md+ */}
+          layout: stacked on mobile, tabs left + controls right on md+ */}
       <div className="flex w-full flex-col md:flex-row md:items-center md:justify-between gap-2">
-        <div>
+        <div className="md:flex-1">
           <Tabs
             defaultValue="15m"
             value={selectedRange}
             onValueChange={(v: string) =>
               setSelectedRange(v as "15m" | "30m" | "1h" | "6h" | "1d" | "7d")
             }
-            className="md:w-[520px] w-full"
+            className="w-full md:w-[520px]"
           >
             <TabsList className="gap-2 p-1">
               {ranges.map((r) => (
@@ -209,18 +215,28 @@ export default function GraphMonitoring() {
           </Tabs>
         </div>
 
-        <div className="flex items-center gap-3 text-sm text-muted-foreground mt-2 md:mt-0 md:ml-4">
-          <div>Refresh in {nextRefresh}s</div>
-          <button
-            type="button"
-            onClick={() => {
-              void fetchTelemetry();
-              setNextRefresh(REFRESH_INTERVAL);
-            }}
-            className="px-2 py-1 rounded bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
-          >
-            Refresh now
-          </button>
+        <div className="flex items-center gap-3 text-sm text-muted-foreground mt-2 md:mt-0 md:ml-4 w-full md:w-auto justify-between md:justify-end">
+          <div className="flex-1 md:flex-none md:text-right">
+            {selectedDeviceId && isConnected
+              ? `Refresh in ${nextRefresh}s`
+              : "Refresh paused"}
+          </div>
+          <div className="flex-none">
+            <button
+              type="button"
+              onClick={() => {
+                if (!selectedDeviceId || !isConnected) return;
+                void fetchTelemetry();
+                setNextRefresh(REFRESH_INTERVAL);
+              }}
+              disabled={!selectedDeviceId || !isConnected}
+              aria-label="Refresh now"
+              title="Refresh now"
+              className="p-2 rounded bg-slate-100 text-slate-800 disabled:opacity-50 dark:bg-slate-800 dark:text-slate-100"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 
