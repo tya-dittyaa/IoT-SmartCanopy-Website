@@ -23,16 +23,16 @@ export default function DeviceControl() {
 
   const getServoStatusIcon = () => {
     switch (telemetry.servoStatus) {
-      case "OPEN":
+      case "open":
         return "🔓";
-      case "CLOSED":
+      case "closed":
         return "🔒";
       default:
         return "❓";
     }
   };
 
-  const isServoOpen = telemetry.servoStatus === "OPEN";
+  const isServoOpen = telemetry.servoStatus === "open";
   const canControlServo = connected && telemetry.mode === "manual";
 
   return (
