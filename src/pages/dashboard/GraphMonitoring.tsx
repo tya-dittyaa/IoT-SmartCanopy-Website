@@ -54,27 +54,8 @@ export default function GraphMonitoring() {
 
   const isConnected = wsStatus?.isConnected ?? false;
 
-  const rangeToPoints = useMemo<Record<string, number>>(
-    () => ({
-      "15m": 3,
-      "30m": 4,
-      "1h": 6,
-      "6h": tempData.length,
-      "1d": tempData.length,
-      "7d": tempData.length,
-    }),
-    [tempData.length]
-  );
-
-  const filteredTempData = useMemo(() => {
-    const count = rangeToPoints[selectedRange] ?? tempData.length;
-    return tempData.slice(Math.max(0, tempData.length - count));
-  }, [selectedRange, rangeToPoints, tempData]);
-
-  const filteredHumidityData = useMemo(() => {
-    const count = rangeToPoints[selectedRange] ?? humidityData.length;
-    return humidityData.slice(Math.max(0, humidityData.length - count));
-  }, [selectedRange, rangeToPoints, humidityData]);
+  const filteredTempData = useMemo(() => tempData, [tempData]);
+  const filteredHumidityData = useMemo(() => humidityData, [humidityData]);
 
   const latestTemp =
     filteredTempData[filteredTempData.length - 1] ??
