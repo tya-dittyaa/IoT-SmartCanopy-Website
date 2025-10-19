@@ -32,7 +32,6 @@ import {
 import { useDevice } from "@/contexts/device-context";
 import type { TelemetryDto } from "@/types/telemetry";
 
-// initial empty arrays; will be replaced by fetched data
 const tempDataInit: Array<{ time: string; temp: number }> = [];
 const humidityDataInit: Array<{ time: string; hum: number }> = [];
 
@@ -50,16 +49,10 @@ export default function GraphMonitoring() {
     useState<Array<{ time: string; temp: number }>>(tempDataInit);
   const [humidityData, setHumidityData] =
     useState<Array<{ time: string; hum: number }>>(humidityDataInit);
-  // loading/error states removed — global Alert handles connection state
 
-  // use selected device from context
   const { selectedDeviceId, wsStatus } = useDevice();
 
-  // read connection flag for effect dependency (primitive)
   const isConnected = wsStatus?.isConnected ?? false;
-
-  // Do NOT auto-select a device here. Require an explicit selection and
-  // connection (see LiveMonitoring) before fetching telemetry.
 
   const rangeToPoints = useMemo<Record<string, number>>(
     () => ({
@@ -90,7 +83,6 @@ export default function GraphMonitoring() {
     filteredHumidityData[filteredHumidityData.length - 1] ??
     humidityData[humidityData.length - 1];
 
-  // Refresh / polling logic: fetch immediately and then every 10s
   const REFRESH_INTERVAL = 30; // seconds (fixed)
   const [nextRefresh, setNextRefresh] = useState<number>(REFRESH_INTERVAL);
 
@@ -135,8 +127,7 @@ export default function GraphMonitoring() {
       setTempData(temps);
       setHumidityData(hums);
     } catch {
-      // swallow error — we don't surface per-card errors here
-      // but you could log or set a global error state if needed
+      // swallow error
     }
 
     return () => {
@@ -145,21 +136,17 @@ export default function GraphMonitoring() {
   }, [selectedRange, selectedDeviceId, isConnected]);
 
   useEffect(() => {
-    // only run polling when a device is selected and connected
     if (!selectedDeviceId || !isConnected) {
       setNextRefresh(REFRESH_INTERVAL);
       return;
     }
 
-    // trigger immediate fetch
     void fetchTelemetry();
     setNextRefresh(REFRESH_INTERVAL);
 
-    // countdown interval every 1s
     const tick = setInterval(() => {
       setNextRefresh((s) => {
         if (s <= 1) {
-          // time to refresh
           void fetchTelemetry();
           return REFRESH_INTERVAL;
         }
@@ -170,12 +157,10 @@ export default function GraphMonitoring() {
     return () => clearInterval(tick);
   }, [fetchTelemetry, selectedDeviceId, isConnected]);
 
-  // Available range options for the tabs (typed)
   const ranges = ["15m", "30m", "1h", "6h", "1d", "7d"] as const;
 
   return (
     <div className="space-y-6">
-      {/* Connection Alert */}
       {!isConnected && (
         <Alert className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950/50">
           <AlertCircle className="h-4 w-4 text-yellow-600" />
@@ -193,8 +178,6 @@ export default function GraphMonitoring() {
         </p>
       </div>
 
-      {/* Global time-range tabs that affect all three charts —
-          layout: stacked on mobile, tabs left + controls right on md+ */}
       <div className="flex w-full flex-col md:flex-row md:items-center md:justify-between gap-2">
         <div className="md:flex-1">
           <Tabs
