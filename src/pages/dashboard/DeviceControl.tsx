@@ -55,13 +55,13 @@ export default function DeviceControl() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 auto-rows-fr">
         {/* Mode Control */}
-        <Card>
+        <Card className="flex flex-col h-full">
           <CardHeader>
             <CardTitle>Operating Mode</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 flex-1">
             <div className="flex items-center justify-center mb-6">
               <div className="text-6xl">{getModeIcon()}</div>
             </div>
@@ -97,11 +97,11 @@ export default function DeviceControl() {
         </Card>
 
         {/* Operating Canopy */}
-        <Card>
+        <Card className="flex flex-col h-full">
           <CardHeader>
             <CardTitle>Operating Canopy</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 flex-1">
             <div className="flex items-center justify-center mb-6">
               <div className="text-6xl">{getServoStatusIcon()}</div>
             </div>
