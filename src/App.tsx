@@ -11,6 +11,7 @@ const DashboardLayout = lazy(
 const DashboardHome = lazy(() => import("./pages/dashboard/DashboardHome"));
 const DeviceControl = lazy(() => import("./pages/dashboard/DeviceControl"));
 const LiveMonitoring = lazy(() => import("./pages/dashboard/LiveMonitoring"));
+const GraphMonitoring = lazy(() => import("./pages/dashboard/GraphMonitoring"));
 
 function App() {
   return (
@@ -62,6 +63,18 @@ function App() {
             >
               <DashboardLayout>
                 <DeviceControl />
+              </DashboardLayout>
+            </Suspense>
+          }
+        />
+        <Route
+          path="/dashboard/graphs"
+          element={
+            <Suspense
+              fallback={<LoadingSpinner size="lg" text="Loading Graphs..." />}
+            >
+              <DashboardLayout>
+                <GraphMonitoring />
               </DashboardLayout>
             </Suspense>
           }

@@ -1,4 +1,11 @@
-import { Activity, Home, Radio, RefreshCw, Zap } from "lucide-react";
+import {
+  Activity,
+  Home,
+  Radio,
+  RefreshCw,
+  TrendingUp,
+  Zap,
+} from "lucide-react";
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -21,6 +28,7 @@ import { useDevice } from "@/contexts/device-context";
 const menuItems = [
   { title: "Home", url: "/dashboard", icon: Home },
   { title: "Live Data", url: "/dashboard/live", icon: Activity },
+  { title: "Graph Data", url: "/dashboard/graphs", icon: TrendingUp },
   { title: "Device Control", url: "/dashboard/control", icon: Zap },
 ];
 
