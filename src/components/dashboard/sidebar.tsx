@@ -133,7 +133,7 @@ export function IoTDashboardSidebar({
           <SidebarGroupContent>
             <div className="space-y-2">
               <div
-                className={`flex items-center gap-2 px-2 py-2 rounded-md ${
+                className={`flex flex-col gap-1 px-2 py-2 rounded-md ${
                   wsStatus.isConnected
                     ? "bg-green-500/10"
                     : wsStatus.isConnecting
@@ -141,16 +141,24 @@ export function IoTDashboardSidebar({
                     : "bg-red-500/10"
                 }`}
               >
-                <Radio
-                  className={`h-4 w-4 ${
-                    wsStatus.isConnected
-                      ? "text-green-500"
-                      : wsStatus.isConnecting
-                      ? "text-yellow-500"
-                      : "text-red-500"
-                  }`}
-                />
-                <span className="text-sm">WebSocket Connection</span>
+                <div className="flex items-center gap-2">
+                  <Radio
+                    className={`h-4 w-4 ${
+                      wsStatus.isConnected
+                        ? "text-green-500"
+                        : wsStatus.isConnecting
+                        ? "text-yellow-500"
+                        : "text-red-500"
+                    }`}
+                  />
+                  <span className="text-sm">WebSocket Connection</span>
+                </div>
+                {wsStatus.isConnected && wsStatus.lastConnected ? (
+                  <div className="text-[11px] text-muted-foreground ml-6">
+                    Last connected:{" "}
+                    {new Date(wsStatus.lastConnected).toLocaleString()}
+                  </div>
+                ) : null}
               </div>
 
               <div
@@ -173,10 +181,8 @@ export function IoTDashboardSidebar({
                 {selectedDeviceStatus?.isConnected &&
                 selectedDeviceStatus.lastSeen ? (
                   <div className="text-[11px] text-muted-foreground ml-6">
-                    Last Seen:{" "}
-                    {new Date(
-                      selectedDeviceStatus.lastSeen
-                    ).toLocaleTimeString()}
+                    Last seen:{" "}
+                    {new Date(selectedDeviceStatus.lastSeen).toLocaleString()}
                   </div>
                 ) : null}
               </div>

@@ -43,6 +43,7 @@ export interface DeviceConnectionStatus {
   isConnected: boolean;
   isConnecting: boolean;
   connectionError: string | null;
+  lastConnected?: number | null;
 }
 
 export interface DeviceContextType {
@@ -70,6 +71,7 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
     isConnected: false,
     isConnecting: false,
     connectionError: null,
+    lastConnected: null,
   });
   const [telemetryData, setTelemetryData] = useState<TelemetryData>({
     temperature: null,
@@ -232,7 +234,6 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
         (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
         window.location.origin;
       const socket = io(`${socketUrl}/devices`, {
-        // keep websocket transport but rely on socket.io defaults for autoConnect and reconnection
         transports: ["websocket"],
       });
 
@@ -246,11 +247,13 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
             lastSeen: Date.now(),
           });
         }
-        setWsStatus({
+        setWsStatus((prev) => ({
+          ...prev,
           isConnected: true,
           isConnecting: false,
           connectionError: null,
-        });
+          lastConnected: Date.now(),
+        }));
         clearTelemetryTimer();
         telemetryTimer = window.setTimeout(
           markNoTelemetry,
@@ -313,11 +316,12 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
 
       const handleConnectionError = (message?: string) => {
         console.error("Socket connection failure", message ?? "");
-        setWsStatus({
+        setWsStatus((prev) => ({
+          ...prev,
           isConnected: false,
           isConnecting: false,
           connectionError: message ?? "Connection failed",
-        });
+        }));
         if (selectedDeviceId)
           updateDeviceStatus(selectedDeviceId, {
             isConnected: false,
@@ -347,11 +351,12 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
       });
 
       socket.on("disconnect", (reason: string) => {
-        setWsStatus({
+        setWsStatus((prev) => ({
+          ...prev,
           isConnected: false,
           isConnecting: false,
           connectionError: `Disconnected: ${reason}`,
-        });
+        }));
         if (selectedDeviceId)
           updateDeviceStatus(selectedDeviceId, {
             isConnected: false,
