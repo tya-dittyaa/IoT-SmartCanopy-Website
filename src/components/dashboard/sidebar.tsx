@@ -27,10 +27,18 @@ const menuItems = [
 export function IoTDashboardSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
-  const { selectedDeviceId, deviceStatuses, connectToDevice, disconnectFromDevice, wsStatus } = useWs();
-  const selectedDeviceStatus = selectedDeviceId ? deviceStatuses?.[selectedDeviceId] : undefined;
-  
-  
+  const {
+    selectedDeviceId,
+    availableDevices,
+    connectToDevice,
+    disconnectFromDevice,
+    wsStatus,
+  } = useWs();
+  const selectedDevice = selectedDeviceId
+    ? availableDevices.find((d) => d.deviceId === selectedDeviceId)
+    : undefined;
+  const selectedDeviceStatus = selectedDevice;
+
   return (
     <Sidebar variant="inset" {...props}>
       <SidebarHeader>
@@ -48,7 +56,6 @@ export function IoTDashboardSidebar({
       </SidebarHeader>
 
       <SidebarContent>
-
         <SidebarGroup>
           <SidebarGroupLabel>Device</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -59,7 +66,11 @@ export function IoTDashboardSidebar({
                 <button
                   onClick={() => connectToDevice()}
                   disabled={!selectedDeviceId}
-                  className={`w-full inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-white ${!selectedDeviceId ? "bg-gray-400 cursor-not-allowed" : "bg-green-600"}`}
+                  className={`w-full inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-white ${
+                    !selectedDeviceId
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-green-600"
+                  }`}
                 >
                   Connect
                 </button>
@@ -79,18 +90,52 @@ export function IoTDashboardSidebar({
           <SidebarGroupLabel>Status</SidebarGroupLabel>
           <SidebarGroupContent>
             <div className="space-y-2">
-              <div className={`flex items-center gap-2 px-2 py-2 rounded-md ${wsStatus.isConnected ? "bg-green-500/10" : wsStatus.isConnecting ? "bg-yellow-500/10" : "bg-red-500/10"}`}>
-                <Radio className={`h-4 w-4 ${wsStatus.isConnected ? "text-green-500" : wsStatus.isConnecting ? "text-yellow-500" : "text-red-500"}`} />
+              <div
+                className={`flex items-center gap-2 px-2 py-2 rounded-md ${
+                  wsStatus.isConnected
+                    ? "bg-green-500/10"
+                    : wsStatus.isConnecting
+                    ? "bg-yellow-500/10"
+                    : "bg-red-500/10"
+                }`}
+              >
+                <Radio
+                  className={`h-4 w-4 ${
+                    wsStatus.isConnected
+                      ? "text-green-500"
+                      : wsStatus.isConnecting
+                      ? "text-yellow-500"
+                      : "text-red-500"
+                  }`}
+                />
                 <span className="text-sm">WebSocket Connection</span>
               </div>
 
-              <div className={`flex flex-col gap-1 px-2 py-2 rounded-md ${selectedDeviceStatus?.isConnected ? "bg-green-500/10" : "bg-red-500/10"}`}>
+              <div
+                className={`flex flex-col gap-1 px-2 py-2 rounded-md ${
+                  selectedDeviceStatus?.isConnected
+                    ? "bg-green-500/10"
+                    : "bg-red-500/10"
+                }`}
+              >
                 <div className="flex items-center gap-2">
-                  <Radio className={`h-4 w-4 ${selectedDeviceStatus?.isConnected ? "text-green-500" : "text-red-500"}`} />
+                  <Radio
+                    className={`h-4 w-4 ${
+                      selectedDeviceStatus?.isConnected
+                        ? "text-green-500"
+                        : "text-red-500"
+                    }`}
+                  />
                   <span className="text-sm">Device Connection</span>
                 </div>
-                {selectedDeviceStatus?.isConnected && selectedDeviceStatus.lastSeen ? (
-                  <div className="text-[11px] text-muted-foreground ml-6">Last Seen: {new Date(selectedDeviceStatus.lastSeen).toLocaleTimeString()}</div>
+                {selectedDeviceStatus?.isConnected &&
+                selectedDeviceStatus.lastSeen ? (
+                  <div className="text-[11px] text-muted-foreground ml-6">
+                    Last Seen:{" "}
+                    {new Date(
+                      selectedDeviceStatus.lastSeen
+                    ).toLocaleTimeString()}
+                  </div>
                 ) : null}
               </div>
             </div>

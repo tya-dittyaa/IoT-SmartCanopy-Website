@@ -10,6 +10,8 @@ import {
 } from "react";
 import { io, type Socket } from "socket.io-client";
 import { fetchDevices } from "../api/devices";
+import type { Device } from "../types/device";
+
 const TELEMETRY_TIMEOUT = 120_000;
 
 function disconnectSocket(s?: Socket | null) {
@@ -19,16 +21,6 @@ function disconnectSocket(s?: Socket | null) {
   } catch (e) {
     void e;
   }
-}
-
-export interface DeviceConfig {
-  name: string;
-  deviceId: string;
-}
-
-export interface DeviceStatus {
-  isConnected: boolean;
-  lastSeen: number | null;
 }
 
 export interface TelemetryData {
@@ -56,10 +48,9 @@ export interface WSConnectionStatus {
 export interface WsContextType {
   selectedDeviceId: string;
   setSelectedDeviceId: (deviceId: string) => void;
-  availableDevices: DeviceConfig[];
-  deviceStatuses: Record<string, DeviceStatus>;
-  updateDeviceStatus: (deviceId: string, status: DeviceStatus) => void;
-  getSelectedDeviceConfig: () => DeviceConfig | undefined;
+  availableDevices: Device[];
+  updateDeviceStatus: (deviceId: string, status: Partial<Device>) => void;
+  getSelectedDevice: () => Device | undefined;
   wsStatus: WSConnectionStatus;
   updateWsStatus: (status: WSConnectionStatus) => void;
   telemetryData: TelemetryData;
@@ -86,13 +77,10 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
     servoStatus: "unknown",
     mode: "unknown",
   });
-  const [deviceStatuses, setDeviceStatuses] = useState<
-    Record<string, DeviceStatus>
-  >({});
   const socketRef = useRef<Socket | null>(null);
-  const [availableDevicesState, setAvailableDevicesState] = useState<
-    DeviceConfig[]
-  >([]);
+  const [availableDevicesState, setAvailableDevicesState] = useState<Device[]>(
+    []
+  );
   const availableDevices = availableDevicesState;
 
   const resetTelemetryData = useCallback(() => {
@@ -106,8 +94,12 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const updateDeviceStatus = useCallback(
-    (deviceId: string, status: DeviceStatus) => {
-      setDeviceStatuses((prev) => ({ ...prev, [deviceId]: status }));
+    (deviceId: string, status: Partial<Device>) => {
+      setAvailableDevicesState((prev) =>
+        prev.map((item) =>
+          item.deviceId === deviceId ? { ...item, ...status } : item
+        )
+      );
     },
     []
   );
@@ -122,7 +114,7 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
     []
   );
 
-  const getSelectedDeviceConfig = useCallback((): DeviceConfig | undefined => {
+  const getSelectedDevice = useCallback((): Device | undefined => {
     return availableDevices.find(
       (device) => device.deviceId === selectedDeviceId
     );
@@ -135,14 +127,16 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
         const data = await fetchDevices();
         if (aborted) return;
         if (Array.isArray(data)) {
-          const configs: DeviceConfig[] = data
+          const configs: Device[] = data
             .map((d) => ({
               name: d.deviceName ?? "unknown",
               deviceId: d.deviceKey ?? d.id,
+              isConnected: false,
+              lastSeen: null,
             }))
             .filter(
               (c) => c.deviceId && typeof c.deviceId === "string"
-            ) as DeviceConfig[];
+            ) as Device[];
           if (configs.length > 0) setAvailableDevicesState(configs);
         }
       } catch (e) {
@@ -157,10 +151,10 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
 
   const connectWS = useCallback(() => {
     if (!selectedDeviceId) return;
-    const deviceConfig = availableDevices.find(
+    const deviceItem = availableDevices.find(
       (d) => d.deviceId === selectedDeviceId
     );
-    if (!deviceConfig) return;
+    if (!deviceItem) return;
     if (socketRef.current && socketRef.current.active) return;
 
     setWsStatus({
@@ -402,16 +396,17 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
     resetTelemetryData();
 
     if (selectedDeviceId) {
-      setDeviceStatuses((prev) => {
-        const typedPrev = prev as Record<string, DeviceStatus>;
-        const existing = typedPrev[selectedDeviceId] as
-          | DeviceStatus
-          | undefined;
-        if (existing) return prev;
-        return {
-          ...typedPrev,
-          [selectedDeviceId]: { isConnected: false, lastSeen: null },
-        };
+      setAvailableDevicesState((prev) => {
+        if (prev.find((d) => d.deviceId === selectedDeviceId)) return prev;
+        return [
+          ...prev,
+          {
+            name: "unknown",
+            deviceId: selectedDeviceId,
+            isConnected: false,
+            lastSeen: null,
+          },
+        ];
       });
     }
 
@@ -464,12 +459,11 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
       }
       socketRef.current = null;
     }
-    if (selectedDeviceId) {
+    if (selectedDeviceId)
       updateDeviceStatus(selectedDeviceId, {
         isConnected: false,
         lastSeen: null,
       });
-    }
     setWsStatus({
       isConnected: false,
       isConnecting: false,
@@ -484,9 +478,8 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
         selectedDeviceId,
         setSelectedDeviceId,
         availableDevices,
-        deviceStatuses,
         updateDeviceStatus,
-        getSelectedDeviceConfig,
+        getSelectedDevice,
         wsStatus,
         updateWsStatus,
         telemetryData,
