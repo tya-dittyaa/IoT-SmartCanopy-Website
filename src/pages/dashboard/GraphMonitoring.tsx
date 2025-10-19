@@ -91,7 +91,7 @@ export default function GraphMonitoring() {
     humidityData[humidityData.length - 1];
 
   // Refresh / polling logic: fetch immediately and then every 10s
-  const REFRESH_INTERVAL = 10; // seconds
+  const REFRESH_INTERVAL = 30; // seconds (fixed)
   const [nextRefresh, setNextRefresh] = useState<number>(REFRESH_INTERVAL);
 
   const fetchTelemetry = useCallback(async () => {
@@ -209,8 +209,18 @@ export default function GraphMonitoring() {
           </Tabs>
         </div>
 
-        <div className="text-sm text-muted-foreground mt-2 md:mt-0 md:ml-4">
-          Refresh in {nextRefresh}s
+        <div className="flex items-center gap-3 text-sm text-muted-foreground mt-2 md:mt-0 md:ml-4">
+          <div>Refresh in {nextRefresh}s</div>
+          <button
+            type="button"
+            onClick={() => {
+              void fetchTelemetry();
+              setNextRefresh(REFRESH_INTERVAL);
+            }}
+            className="px-2 py-1 rounded bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+          >
+            Refresh now
+          </button>
         </div>
       </div>
 
