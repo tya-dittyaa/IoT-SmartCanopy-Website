@@ -1,13 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import type { ReactNode } from "react";
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import type { DeviceConfig } from "../config/devices";
 import { deviceConfigs } from "../config/devices";
@@ -25,7 +18,6 @@ export interface TelemetryData {
   mode: "auto" | "manual" | "unknown";
 }
 
-// Telemetry payload shape received from devices
 export interface ISensorTelemetry {
   humidity: number;
   temperature: number;
@@ -61,85 +53,46 @@ const WsContext = createContext<WsContextType | undefined>(undefined);
 
 export const WsProvider = ({ children }: { children: ReactNode }) => {
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>("");
-  const [wsStatus, setWsStatus] = useState<WSConnectionStatus>({
-    isConnected: false,
-    isConnecting: false,
-    connectionError: null,
-  });
-  const [telemetryData, setTelemetryData] = useState<TelemetryData>({
-    temperature: null,
-    humidity: null,
-    rainStatus: "unknown",
-    servoStatus: "unknown",
-    mode: "unknown",
-  });
-
-  const [deviceStatuses, setDeviceStatuses] = useState<
-    Record<string, DeviceStatus>
-  >({});
-
+  const [wsStatus, setWsStatus] = useState<WSConnectionStatus>({ isConnected: false, isConnecting: false, connectionError: null });
+  const [telemetryData, setTelemetryData] = useState<TelemetryData>({ temperature: null, humidity: null, rainStatus: "unknown", servoStatus: "unknown", mode: "unknown" });
+  const [deviceStatuses, setDeviceStatuses] = useState<Record<string, DeviceStatus>>({});
   const socketRef = useRef<Socket | null>(null);
-
   const availableDevices = deviceConfigs;
 
   const resetTelemetryData = useCallback(() => {
-    setTelemetryData({
-      temperature: null,
-      humidity: null,
-      rainStatus: "unknown",
-      servoStatus: "unknown",
-      mode: "unknown",
-    });
+    setTelemetryData({ temperature: null, humidity: null, rainStatus: "unknown", servoStatus: "unknown", mode: "unknown" });
   }, []);
 
-  const updateDeviceStatus = useCallback(
-    (deviceId: string, status: DeviceStatus) => {
-      setDeviceStatuses((prev) => ({ ...prev, [deviceId]: status }));
-    },
-    []
-  );
-
-  const updateWsStatus = useCallback((status: WSConnectionStatus) => {
-    setWsStatus(status);
+  const updateDeviceStatus = useCallback((deviceId: string, status: DeviceStatus) => {
+    setDeviceStatuses((prev) => ({ ...prev, [deviceId]: status }));
   }, []);
 
-  const updateTelemetryData = useCallback((data: TelemetryData) => {
-    setTelemetryData(data);
-  }, []);
+  const updateWsStatus = useCallback((status: WSConnectionStatus) => setWsStatus(status), []);
+
+  const updateTelemetryData = useCallback((data: TelemetryData) => setTelemetryData(data), []);
 
   const getSelectedDeviceConfig = useCallback((): DeviceConfig | undefined => {
-    return availableDevices.find(
-      (device) => device.deviceId === selectedDeviceId
-    );
+    return availableDevices.find((device) => device.deviceId === selectedDeviceId);
   }, [availableDevices, selectedDeviceId]);
 
   const connectWS = useCallback(() => {
-    // Connect for currently selected device only
     if (!selectedDeviceId) return;
-
     const deviceConfig = availableDevices.find((d) => d.deviceId === selectedDeviceId);
-    if (!deviceConfig) {
-      console.error("Selected device config not found");
-      return;
-    }
-
-    // if already connected to this device, ignore
+    if (!deviceConfig) return;
     if (socketRef.current && socketRef.current.active) return;
 
     setWsStatus({ isConnected: false, isConnecting: true, connectionError: null });
     resetTelemetryData();
 
-    // clear any existing socket
     if (socketRef.current) {
       try {
         socketRef.current.disconnect();
-      } catch {
-        // ignore
+      } catch (e) {
+        void e;
       }
       socketRef.current = null;
     }
 
-    // telemetry watchdog - 2 minutes (120000 ms)
     let telemetryTimer: number | null = null;
     const clearTelemetryTimer = () => {
       if (telemetryTimer) {
@@ -149,14 +102,13 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const markNoTelemetry = () => {
-      // mark disconnected due to telemetry timeout
       updateDeviceStatus(selectedDeviceId, { isConnected: false, lastSeen: null });
       setWsStatus({ isConnected: false, isConnecting: false, connectionError: "No telemetry received for 2 minutes" });
       if (socketRef.current) {
         try {
           socketRef.current.disconnect();
-        } catch {
-          // ignore
+        } catch (e) {
+          void e;
         }
         socketRef.current = null;
       }
@@ -168,8 +120,6 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
       socket.on("connect", () => {
         updateDeviceStatus(selectedDeviceId, { isConnected: true, lastSeen: Date.now() });
         setWsStatus({ isConnected: true, isConnecting: false, connectionError: null });
-
-        // start telemetry watchdog
         clearTelemetryTimer();
         telemetryTimer = window.setTimeout(markNoTelemetry, 120000) as unknown as number;
       });
@@ -181,7 +131,6 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
           if (!deviceKey || !sensorData) return;
           if (deviceKey !== selectedDeviceId) return;
 
-          // update telemetry
           setTelemetryData((prev) => ({
             ...prev,
             ...(sensorData.temperature !== undefined && { temperature: Number(sensorData.temperature) }),
@@ -191,7 +140,6 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
             ...(sensorData.mode !== undefined && { mode: sensorData.mode === "MANUAL" ? "manual" : "auto" }),
           }));
 
-          // reset watchdog and update lastSeen
           updateDeviceStatus(selectedDeviceId, { isConnected: true, lastSeen: Date.now() });
           clearTelemetryTimer();
           telemetryTimer = window.setTimeout(markNoTelemetry, 120000) as unknown as number;
@@ -209,11 +157,32 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
         if (socketRef.current) {
           try {
             socketRef.current.disconnect();
-          } catch {
-            // ignore
+          } catch (e) {
+            void e;
           }
           socketRef.current = null;
         }
+      });
+
+      socket.on("error", (err: unknown) => {
+        let message = "Socket error";
+        if (err && typeof err === "object") {
+          const possible = err as { message?: unknown };
+          if (possible.message) message = String(possible.message);
+        } else if (err) {
+          message = String(err);
+        }
+        console.error("Socket error", err);
+        setWsStatus({ isConnected: false, isConnecting: false, connectionError: message });
+        updateDeviceStatus(selectedDeviceId, { isConnected: false, lastSeen: null });
+        resetTelemetryData();
+        clearTelemetryTimer();
+        try {
+          socket.disconnect();
+        } catch (e) {
+          void e;
+        }
+        socketRef.current = null;
       });
 
       socket.on("disconnect", (reason: string) => {
@@ -233,7 +202,6 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [availableDevices, selectedDeviceId, resetTelemetryData, updateDeviceStatus]);
 
-  // disconnectWS is intentionally removed; disconnection is handled explicitly by connect/disconnect flows
 
   const publishMode = useCallback(
     (mode: "auto" | "manual") => {
@@ -255,11 +223,9 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
     [wsStatus.isConnected, selectedDeviceId]
   );
 
-  // Auto-connect websocket on mount and keep connection open.
-  // When selectedDeviceId changes, (re)connect to that device automatically.
+
   useEffect(() => {
-    // When selection changes, do NOT auto-connect.
-    // Ensure any existing socket is disconnected and status reset so user must press Connect.
+    
     if (socketRef.current) {
       try {
         socketRef.current.disconnect();
@@ -269,13 +235,10 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
       socketRef.current = null;
     }
 
-    // Reset global wsStatus and telemetry when selection changes
     setWsStatus({ isConnected: false, isConnecting: false, connectionError: null });
     resetTelemetryData();
 
-    // Ensure selected device has an entry in deviceStatuses (default offline).
-    // Use functional updater and only add the entry if it's missing to avoid
-    // causing a state change on every render which can trigger an infinite loop.
+    
     if (selectedDeviceId) {
       setDeviceStatuses((prev) => {
         const typedPrev = prev as Record<string, DeviceStatus>;
@@ -320,14 +283,12 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const connectToDevice = useCallback(() => {
-    // Explicit connect: (re)connect to currently selected device
     if (!selectedDeviceId) return;
     setWsStatus((prev) => ({ ...prev, connectionError: null }));
     connectWS();
   }, [connectWS, selectedDeviceId]);
 
   const disconnectFromDevice = useCallback(() => {
-    // Disconnect socket but keep device selected so user can reconnect
     if (socketRef.current) {
       try {
         socketRef.current.disconnect();
