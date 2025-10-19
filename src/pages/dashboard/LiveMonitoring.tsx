@@ -54,9 +54,9 @@ export default function LiveMonitoring() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 auto-rows-fr">
         {/* Temperature */}
-        <Card className="flex flex-col">
+        <Card className="flex flex-col h-full">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">Temperature</CardTitle>
           </CardHeader>
@@ -75,7 +75,7 @@ export default function LiveMonitoring() {
         </Card>
 
         {/* Humidity */}
-        <Card className="flex flex-col">
+        <Card className="flex flex-col h-full">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">Humidity</CardTitle>
           </CardHeader>
@@ -92,7 +92,7 @@ export default function LiveMonitoring() {
         </Card>
 
         {/* Rain Status */}
-        <Card className="flex flex-col">
+        <Card className="flex flex-col h-full">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">Rain Status</CardTitle>
           </CardHeader>
@@ -112,7 +112,7 @@ export default function LiveMonitoring() {
         </Card>
 
         {/* Canopy Status */}
-        <Card className="flex flex-col">
+        <Card className="flex flex-col h-full">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">Canopy Status</CardTitle>
           </CardHeader>

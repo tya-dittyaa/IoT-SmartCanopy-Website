@@ -204,16 +204,16 @@ export default function GraphMonitoring() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 auto-rows-fr">
         {/* Temperature Card */}
-        <Card>
+        <Card className="flex flex-col h-full">
           <CardHeader>
             <div>
               <CardTitle>Temperature</CardTitle>
               <CardDescription>DHT11 / Example data</CardDescription>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-1">
             <ChartContainer config={{ temp: chartConfig.temp }}>
               <AreaChart
                 data={filteredTempData}
@@ -254,14 +254,14 @@ export default function GraphMonitoring() {
         </Card>
 
         {/* Humidity Card */}
-        <Card>
+        <Card className="flex flex-col h-full">
           <CardHeader>
             <div>
               <CardTitle>Humidity</CardTitle>
               <CardDescription>DHT11 / Example data</CardDescription>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-1">
             <ChartContainer config={{ hum: chartConfig.hum }}>
               <AreaChart
                 data={filteredHumidityData}
@@ -302,14 +302,14 @@ export default function GraphMonitoring() {
         </Card>
 
         {/* Combined Card */}
-        <Card>
+        <Card className="flex flex-col h-full">
           <CardHeader>
             <div>
               <CardTitle>Temperature & Humidity</CardTitle>
               <CardDescription>DHT11 / Combined example data</CardDescription>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-1">
             <ChartContainer
               config={{ temp: chartConfig.temp, hum: chartConfig.hum }}
             >
