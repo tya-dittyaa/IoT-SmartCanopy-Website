@@ -59,6 +59,7 @@ export interface WsContextType {
   disconnectFromDevice: () => void;
   publishMode: (mode: "auto" | "manual") => void;
   publishServo: (cmd: "open" | "close") => void;
+  refreshDevices: () => Promise<void>;
 }
 
 const WsContext = createContext<WsContextType | undefined>(undefined);
@@ -113,6 +114,40 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
     (data: TelemetryData) => setTelemetryData(data),
     []
   );
+
+  const refreshDevices = useCallback(async () => {
+    try {
+      const data = await fetchDevices();
+      if (!Array.isArray(data)) return;
+      const configs: Device[] = data
+        .map((d) => ({
+          name: d.deviceName ?? "unknown",
+          deviceId: d.deviceKey ?? d.id,
+          isConnected:
+            availableDevices.find((a) => a.deviceId === (d.deviceKey ?? d.id))
+              ?.isConnected ?? false,
+          lastSeen:
+            availableDevices.find((a) => a.deviceId === (d.deviceKey ?? d.id))
+              ?.lastSeen ?? null,
+        }))
+        .filter(
+          (c) => c.deviceId && typeof c.deviceId === "string"
+        ) as Device[];
+
+      setAvailableDevicesState((prev) => {
+        const byId = new Map(prev.map((p) => [p.deviceId, p]));
+        for (const cfg of configs) {
+          byId.set(cfg.deviceId, {
+            ...byId.get(cfg.deviceId),
+            ...cfg,
+          } as Device);
+        }
+        return Array.from(byId.values());
+      });
+    } catch (e) {
+      console.error("Error refreshing devices:", e);
+    }
+  }, [availableDevices]);
 
   const getSelectedDevice = useCallback((): Device | undefined => {
     return availableDevices.find(
@@ -488,6 +523,7 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
         disconnectFromDevice,
         publishMode,
         publishServo,
+        refreshDevices,
       }}
     >
       {children}
