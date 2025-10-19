@@ -240,7 +240,7 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
       const socketUrl =
         (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
         window.location.origin;
-      const socket = io(socketUrl, {
+      const socket = io(`${socketUrl}/devices`, {
         autoConnect: false,
         transports: ["websocket"],
         reconnection: false,
@@ -270,7 +270,7 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
       });
 
       socket.on(
-        "devices/telemetry",
+        "telemetry",
         (payload: {
           deviceKey?: string;
           sensorData?: ISensorTelemetry | null;
@@ -436,7 +436,7 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
   const publishMode = useCallback(
     (mode: "auto" | "manual") => {
       if (socketRef.current && wsStatus.isConnected && selectedDeviceId) {
-        socketRef.current.emit("devices/command/mode", {
+        socketRef.current.emit("command/mode", {
           deviceKey: selectedDeviceId,
           mode: mode === "manual" ? "MANUAL" : "AUTO",
         });
@@ -449,7 +449,7 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
   const publishServo = useCallback(
     (cmd: "open" | "close") => {
       if (socketRef.current && wsStatus.isConnected && selectedDeviceId) {
-        socketRef.current.emit("devices/command/servo", {
+        socketRef.current.emit("command/servo", {
           deviceKey: selectedDeviceId,
           cmd: cmd === "open" ? "OPEN" : "CLOSE",
         });
