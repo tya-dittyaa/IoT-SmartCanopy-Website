@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import {
@@ -18,6 +19,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const description = "Graph monitoring for Temperature and Humidity";
 
@@ -45,8 +47,41 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export default function GraphMonitoring() {
-  const latestTemp = tempData[tempData.length - 1];
-  const latestHum = humidityData[humidityData.length - 1];
+  const [selectedRange, setSelectedRange] = useState<
+    "15m" | "30m" | "1h" | "6h" | "1d" | "7d"
+  >("15m");
+
+  const rangeToPoints = useMemo<Record<string, number>>(
+    () => ({
+      "15m": 3,
+      "30m": 4,
+      "1h": 6,
+      "6h": tempData.length,
+      "1d": tempData.length,
+      "7d": tempData.length,
+    }),
+    []
+  );
+
+  const filteredTempData = useMemo(() => {
+    const count = rangeToPoints[selectedRange] ?? tempData.length;
+    return tempData.slice(Math.max(0, tempData.length - count));
+  }, [selectedRange, rangeToPoints]);
+
+  const filteredHumidityData = useMemo(() => {
+    const count = rangeToPoints[selectedRange] ?? humidityData.length;
+    return humidityData.slice(Math.max(0, humidityData.length - count));
+  }, [selectedRange, rangeToPoints]);
+
+  const latestTemp =
+    filteredTempData[filteredTempData.length - 1] ??
+    tempData[tempData.length - 1];
+  const latestHum =
+    filteredHumidityData[filteredHumidityData.length - 1] ??
+    humidityData[humidityData.length - 1];
+
+  // Available range options for the tabs (typed)
+  const ranges = ["15m", "30m", "1h", "6h", "1d", "7d"] as const;
 
   return (
     <div className="space-y-6">
@@ -55,6 +90,26 @@ export default function GraphMonitoring() {
         <p className="text-muted-foreground">
           Temperature & Humidity example charts
         </p>
+      </div>
+
+      {/* Global time-range tabs that affect all three charts */}
+      <div className="flex items-center justify-start">
+        <Tabs
+          defaultValue="15m"
+          value={selectedRange}
+          onValueChange={(v: string) =>
+            setSelectedRange(v as "15m" | "30m" | "1h" | "6h" | "1d" | "7d")
+          }
+          className="w-[520px]"
+        >
+          <TabsList className="gap-2 p-1">
+            {ranges.map((r) => (
+              <TabsTrigger key={r} value={r} className="px-3 py-1 text-base">
+                {r}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -68,7 +123,10 @@ export default function GraphMonitoring() {
           </CardHeader>
           <CardContent>
             <ChartContainer config={{ temp: chartConfig.temp }}>
-              <AreaChart data={tempData} margin={{ left: 12, right: 12 }}>
+              <AreaChart
+                data={filteredTempData}
+                margin={{ left: 12, right: 12 }}
+              >
                 <CartesianGrid vertical={false} />
                 <XAxis
                   dataKey="time"
@@ -113,7 +171,10 @@ export default function GraphMonitoring() {
           </CardHeader>
           <CardContent>
             <ChartContainer config={{ hum: chartConfig.hum }}>
-              <AreaChart data={humidityData} margin={{ left: 12, right: 12 }}>
+              <AreaChart
+                data={filteredHumidityData}
+                margin={{ left: 12, right: 12 }}
+              >
                 <CartesianGrid vertical={false} />
                 <XAxis
                   dataKey="time"
@@ -161,10 +222,10 @@ export default function GraphMonitoring() {
               config={{ temp: chartConfig.temp, hum: chartConfig.hum }}
             >
               <AreaChart
-                data={tempData.map((d, i) => ({
+                data={filteredTempData.map((d, i) => ({
                   time: d.time,
                   temp: d.temp,
-                  hum: humidityData[i]?.hum,
+                  hum: filteredHumidityData[i]?.hum,
                 }))}
                 margin={{ left: 12, right: 12 }}
               >
