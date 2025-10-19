@@ -184,16 +184,7 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const reconnectTimerRef = useRef<number | null>(null);
-  const shouldAutoReconnectRef = useRef(true);
   const monitoringDeviceIdRef = useRef<string | null>(null);
-
-  const clearReconnectTimer = () => {
-    if (reconnectTimerRef.current) {
-      window.clearTimeout(reconnectTimerRef.current);
-      reconnectTimerRef.current = null;
-    }
-  };
 
   const connectWS = useCallback(() => {
     if (socketRef.current && socketRef.current.active) return;
@@ -241,9 +232,8 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
         (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
         window.location.origin;
       const socket = io(`${socketUrl}/devices`, {
-        autoConnect: false,
+        // keep websocket transport but rely on socket.io defaults for autoConnect and reconnection
         transports: ["websocket"],
-        reconnection: false,
       });
 
       socket.on("connect", () => {
@@ -266,7 +256,6 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
           markNoTelemetry,
           TELEMETRY_TIMEOUT
         ) as unknown as number;
-        clearReconnectTimer();
       });
 
       socket.on(
@@ -337,27 +326,12 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
         resetTelemetryData();
         clearTelemetryTimer();
 
-        if (shouldAutoReconnectRef.current) {
-          clearReconnectTimer();
-          reconnectTimerRef.current = window.setTimeout(() => {
-            reconnectTimerRef.current = null;
-            try {
-              connectWS();
-            } catch {
-              // swallow
-            }
-          }, 5000) as unknown as number;
-        }
+        // Let socket.io's built-in reconnection handle retries.
       };
 
       socket.on("connect_error", (err: Error) => {
+        // Let socket.io keep trying to reconnect. Update status only.
         handleConnectionError(err?.message ?? String(err));
-        try {
-          socket.disconnect();
-        } catch {
-          // ignore
-        }
-        socketRef.current = null;
       });
 
       socket.on("error", (err: unknown) => {
@@ -368,13 +342,8 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
         } else if (err) {
           message = String(err);
         }
+        // Update status but don't forcibly disconnect; let socket.io manage reconnection.
         handleConnectionError(message);
-        try {
-          socket.disconnect();
-        } catch {
-          // ignore
-        }
-        socketRef.current = null;
       });
 
       socket.on("disconnect", (reason: string) => {
@@ -390,21 +359,12 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
           });
         resetTelemetryData();
         clearTelemetryTimer();
-        if (shouldAutoReconnectRef.current) {
-          clearReconnectTimer();
-          reconnectTimerRef.current = window.setTimeout(() => {
-            reconnectTimerRef.current = null;
-            try {
-              connectWS();
-            } catch {
-              // ignore
-            }
-          }, 5000) as unknown as number;
-        }
+        // socket.io will attempt reconnection by default. We don't schedule manual reconnects.
       });
 
       socketRef.current = socket;
-      socket.connect();
+      // socket created with default options (autoConnect: true, reconnection: true)
+      // so it will connect automatically.
     } catch (e) {
       console.error("Connect error:", e);
       setWsStatus({
@@ -419,17 +379,7 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
         });
       resetTelemetryData();
 
-      if (shouldAutoReconnectRef.current) {
-        clearReconnectTimer();
-        reconnectTimerRef.current = window.setTimeout(() => {
-          reconnectTimerRef.current = null;
-          try {
-            connectWS();
-          } catch {
-            // ignore
-          }
-        }, 5000) as unknown as number;
-      }
+      // Let socket.io handle reconnect attempts; nothing to schedule here.
     }
   }, [selectedDeviceId, resetTelemetryData, updateDeviceStatus]);
 
@@ -529,11 +479,8 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
   }, [resetTelemetryData, selectedDeviceId, updateDeviceStatus]);
 
   useEffect(() => {
-    shouldAutoReconnectRef.current = true;
     connectWS();
     return () => {
-      shouldAutoReconnectRef.current = false;
-      clearReconnectTimer();
       if (socketRef.current) {
         try {
           socketRef.current.disconnect();
