@@ -1,7 +1,5 @@
-import {
-  HumidityRadial,
-  TemperatureRadial,
-} from "@/components/charts/radial-charts";
+import { HumidityRadial } from "@/components/charts/humidity-radial";
+import { TemperatureRadial } from "@/components/charts/temperature-radial";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useDevice } from "@/contexts/device-context";
