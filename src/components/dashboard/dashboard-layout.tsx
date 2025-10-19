@@ -12,7 +12,14 @@ interface DashboardLayoutProps {
 
 export default function IoTDashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    <SidebarProvider>
+    <SidebarProvider
+      style={
+        {
+          ["--sidebar-width"]: "20rem",
+          ["--sidebar-width-mobile"]: "20rem",
+        } as React.CSSProperties & Record<string, string>
+      }
+    >
       <IoTDashboardSidebar />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
