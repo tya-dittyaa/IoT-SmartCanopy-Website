@@ -11,6 +11,6 @@ export const deviceConfigs: DeviceConfig[] = [
   {
     name: "Raph ESP32 Device",
     deviceId: "raph_device",
-    url: "wss://meqititit.dittyaa.id",
+    url: "http://localhost:26925",
   },
 ];

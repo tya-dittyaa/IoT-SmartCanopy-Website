@@ -11,9 +11,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useMqtt } from "@/contexts/mqtt-context";
+import { useWs } from "@/contexts/ws-context";
 import { cn } from "@/lib/utils";
-import { CheckIcon, ChevronsUpDownIcon, Wifi, WifiOff } from "lucide-react";
+import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
 import React from "react";
 
 interface DeviceSelectorProps {
@@ -23,14 +23,7 @@ interface DeviceSelectorProps {
 export default function DeviceSelector({
   onDeviceSelect,
 }: DeviceSelectorProps) {
-  const {
-    selectedDeviceId,
-    setSelectedDeviceId,
-    availableDevices,
-    mqttStatus,
-    connectToDevice,
-    disconnectFromDevice,
-  } = useMqtt();
+  const { selectedDeviceId, setSelectedDeviceId, availableDevices } = useWs();
 
   const [open, setOpen] = React.useState(false);
 
@@ -50,18 +43,8 @@ export default function DeviceSelector({
     return selectedDevice ? selectedDevice.name : selectedDeviceId;
   };
 
-  const handleConnect = () => {
-    if (selectedDeviceId) {
-      connectToDevice();
-    }
-  };
-
-  const handleDisconnect = () => {
-    disconnectFromDevice();
-  };
-
   return (
-    <div className="space-y-3">
+    <div>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -70,7 +53,7 @@ export default function DeviceSelector({
             aria-expanded={open}
             className="w-full justify-between text-sm h-10"
             size="default"
-            disabled={mqttStatus.isConnected}
+            disabled={false}
           >
             {getSelectedDeviceStatus()}
             <ChevronsUpDownIcon className="ml-2 h-3 w-3 shrink-0 opacity-50" />
@@ -115,31 +98,6 @@ export default function DeviceSelector({
           </PopoverContent>
         )}
       </Popover>
-
-      {/* Connect/Disconnect Buttons */}
-      <div className="flex gap-2">
-        {!mqttStatus.isConnected ? (
-          <Button
-            onClick={handleConnect}
-            disabled={!selectedDeviceId || mqttStatus.isConnecting}
-            className="flex-1"
-            size="sm"
-          >
-            <Wifi className="mr-2 h-4 w-4" />
-            {mqttStatus.isConnecting ? "Connecting..." : "Connect"}
-          </Button>
-        ) : (
-          <Button
-            onClick={handleDisconnect}
-            variant="destructive"
-            className="flex-1"
-            size="sm"
-          >
-            <WifiOff className="mr-2 h-4 w-4" />
-            Disconnect
-          </Button>
-        )}
-      </div>
     </div>
   );
 }

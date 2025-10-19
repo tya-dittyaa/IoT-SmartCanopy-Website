@@ -1,4 +1,4 @@
-import { Activity, Heart, Home, Radio, Zap } from "lucide-react";
+import { Activity, Home, Radio, Zap } from "lucide-react";
 import React from "react";
 import { Link } from "react-router-dom";
 
@@ -16,7 +16,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { useMqtt } from "@/contexts/mqtt-context";
+import { useWs } from "@/contexts/ws-context";
 
 const menuItems = [
   { title: "Home", url: "/dashboard", icon: Home },
@@ -27,19 +27,10 @@ const menuItems = [
 export function IoTDashboardSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
-  const { selectedDeviceId, deviceStatuses, mqttStatus } = useMqtt();
-
-  const selectedDeviceStatus = selectedDeviceId
-    ? deviceStatuses[selectedDeviceId]
-    : null;
-
-  const isMQTTConnected = mqttStatus.isConnected;
-
-  const isDeviceHeartbeatActive =
-    isMQTTConnected && selectedDeviceStatus?.lastHeartbeat
-      ? Date.now() - selectedDeviceStatus.lastHeartbeat < 30000
-      : false;
-
+  const { selectedDeviceId, deviceStatuses, connectToDevice, disconnectFromDevice, wsStatus } = useWs();
+  const selectedDeviceStatus = selectedDeviceId ? deviceStatuses?.[selectedDeviceId] : undefined;
+  
+  
   return (
     <Sidebar variant="inset" {...props}>
       <SidebarHeader>
@@ -57,83 +48,50 @@ export function IoTDashboardSidebar({
       </SidebarHeader>
 
       <SidebarContent>
+
         <SidebarGroup>
           <SidebarGroupLabel>Device</SidebarGroupLabel>
           <SidebarGroupContent>
             <DeviceSelector />
+
+            <div className="mt-3">
+              {!selectedDeviceStatus?.isConnected ? (
+                <button
+                  onClick={() => connectToDevice()}
+                  disabled={!selectedDeviceId}
+                  className={`w-full inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-white ${!selectedDeviceId ? "bg-gray-400 cursor-not-allowed" : "bg-green-600"}`}
+                >
+                  Connect
+                </button>
+              ) : (
+                <button
+                  onClick={() => disconnectFromDevice()}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-rose-600 px-3 py-2 text-sm font-medium text-white"
+                >
+                  Disconnect
+                </button>
+              )}
+            </div>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {selectedDeviceId && (
-          <>
-            <SidebarGroup>
-              <SidebarGroupLabel>Status</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <div className="space-y-2">
-                  <div
-                    className={`flex items-center gap-2 px-2 py-1 rounded-md transition-all duration-300 ${
-                      isMQTTConnected
-                        ? "bg-green-500/10"
-                        : mqttStatus.isConnecting
-                        ? "bg-yellow-500/10"
-                        : "bg-red-500/10"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 flex-1">
-                      <div className="relative">
-                        <Radio
-                          className={`h-4 w-4 ${
-                            isMQTTConnected
-                              ? "text-green-500"
-                              : mqttStatus.isConnecting
-                              ? "text-yellow-500"
-                              : "text-red-500"
-                          }`}
-                        />
-                      </div>
-                      <span className="text-sm">MQTT Connection</span>
-                    </div>
-                  </div>
-
-                  <div
-                    className={`flex items-center gap-2 px-2 py-1 rounded-md transition-all duration-300 ${
-                      isDeviceHeartbeatActive
-                        ? "bg-green-500/10"
-                        : "bg-red-500/10"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 flex-1">
-                      <div className="relative">
-                        <Heart
-                          className={`h-4 w-4 ${
-                            isDeviceHeartbeatActive
-                              ? "text-green-500"
-                              : "text-red-500"
-                          }`}
-                        />
-                      </div>
-                      <span className="text-sm">Device Heartbeat</span>
-                    </div>
-                  </div>
-                </div>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </>
-        )}
-
         <SidebarGroup>
-          <SidebarGroupLabel>Quick Access</SidebarGroupLabel>
+          <SidebarGroupLabel>Status</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link to="/">
-                    <Home />
-                    <span>Landing Page</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
+            <div className="space-y-2">
+              <div className={`flex items-center gap-2 px-2 py-2 rounded-md ${wsStatus.isConnected ? "bg-green-500/10" : wsStatus.isConnecting ? "bg-yellow-500/10" : "bg-red-500/10"}`}>
+                <Radio className={`h-4 w-4 ${wsStatus.isConnected ? "text-green-500" : wsStatus.isConnecting ? "text-yellow-500" : "text-red-500"}`} />
+                <span className="text-sm">WebSocket Connection</span>
+              </div>
+
+              <div className={`flex flex-col gap-1 px-2 py-2 rounded-md ${selectedDeviceStatus?.isConnected ? "bg-green-500/10" : "bg-red-500/10"}`}>
+                <div className="flex items-center gap-2">
+                  <Radio className={`h-4 w-4 ${selectedDeviceStatus?.isConnected ? "text-green-500" : "text-red-500"}`} />
+                  <span className="text-sm">Device Connection</span>
+                </div>
+                <div className="text-[11px] text-muted-foreground ml-6 lowercase">Last Seen: {selectedDeviceStatus?.lastSeen ? new Date(selectedDeviceStatus.lastSeen).toLocaleTimeString() : "not seen"}</div>
+              </div>
+            </div>
           </SidebarGroupContent>
         </SidebarGroup>
 
