@@ -138,7 +138,7 @@ export default function GraphMonitoring() {
       <div>
         <h2 className="text-2xl font-bold">Graph Monitoring</h2>
         <p className="text-muted-foreground">
-          Temperature & Humidity example charts
+          Temperature & Humidity monitoring graphs
         </p>
       </div>
 
@@ -201,7 +201,7 @@ export default function GraphMonitoring() {
           <CardHeader>
             <div>
               <CardTitle>Temperature</CardTitle>
-              <CardDescription>DHT11 / Example data</CardDescription>
+              <CardDescription>DHT11</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="flex-1">
@@ -221,7 +221,7 @@ export default function GraphMonitoring() {
           <CardHeader>
             <div>
               <CardTitle>Humidity</CardTitle>
-              <CardDescription>DHT11 / Example data</CardDescription>
+              <CardDescription>DHT11</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="flex-1">
@@ -241,7 +241,7 @@ export default function GraphMonitoring() {
           <CardHeader>
             <div>
               <CardTitle>Temperature & Humidity</CardTitle>
-              <CardDescription>DHT11 / Combined example data</CardDescription>
+              <CardDescription>DHT11</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="flex-1">
