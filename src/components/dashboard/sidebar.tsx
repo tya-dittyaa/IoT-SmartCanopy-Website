@@ -90,10 +90,26 @@ export function IoTDashboardSidebar({
                   <span className="text-sm">Device Connection</span>
                 </div>
                 {selectedDeviceStatus?.isConnected && selectedDeviceStatus.lastSeen ? (
-                  <div className="text-[11px] text-muted-foreground ml-6 lowercase">Last Seen: {new Date(selectedDeviceStatus.lastSeen).toLocaleTimeString()}</div>
+                  <div className="text-[11px] text-muted-foreground ml-6">Last Seen: {new Date(selectedDeviceStatus.lastSeen).toLocaleTimeString()}</div>
                 ) : null}
               </div>
             </div>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Quick Access</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link to="/">
+                    <Home />
+                    <span>Landing Page</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
