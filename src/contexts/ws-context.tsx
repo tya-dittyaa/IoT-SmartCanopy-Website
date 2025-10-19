@@ -2,8 +2,8 @@
 import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
-
-const BASE_URL = "http://localhost:26925";
+import { fetchDevices } from "../api/devices";
+import type { DeviceDto } from "../types/device";
 const TELEMETRY_TIMEOUT = 120_000;
 
 function disconnectSocket(s?: Socket | null) {
@@ -17,21 +17,16 @@ function disconnectSocket(s?: Socket | null) {
 
 function parseDevice(d: unknown): DeviceConfig | null {
   if (!d || typeof d !== "object") return null;
-  const obj = d as Record<string, unknown>;
-  const name = typeof obj.deviceName === "string" ? obj.deviceName : typeof obj.name === "string" ? obj.name : "unknown";
-  const idVal = obj.deviceKey ?? obj.deviceId ?? obj.id;
-  if (typeof idVal !== "string") return null;
-  const url = typeof obj.url === "string" && obj.url ? obj.url : BASE_URL;
-  return { name, deviceId: idVal, url } as DeviceConfig;
+  const obj = d as Partial<DeviceDto & Record<string, unknown>>;
+  const name = typeof obj.deviceName === "string" ? obj.deviceName : "unknown";
+  const idVal = (obj.deviceKey ?? obj.id) as string | undefined;
+  if (!idVal || typeof idVal !== "string") return null;
+  return { name, deviceId: idVal } as DeviceConfig;
 }
 
 export interface DeviceConfig {
   name: string;
   deviceId: string;
-  url: string;
-  username?: string;
-  password?: string;
-  ca?: string;
 }
 
 export interface DeviceStatus {
@@ -107,11 +102,9 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let aborted = false;
-    const fetchDevices = async () => {
+    const loadDevices = async () => {
       try {
-        const res = await fetch(`${BASE_URL}/devices`);
-        if (!res.ok) throw new Error(`Failed to fetch devices: ${res.status}`);
-        const data = await res.json();
+        const data = await fetchDevices();
         if (aborted) return;
         if (Array.isArray(data)) {
           const configs: DeviceConfig[] = data.map(parseDevice).filter(Boolean) as DeviceConfig[];
@@ -121,7 +114,7 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
         console.error("Error fetching devices:", e);
       }
     };
-    fetchDevices();
+  loadDevices();
     return () => {
       aborted = true;
     };
@@ -159,7 +152,9 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
     };
 
     try {
-      const socket = io(deviceConfig.url, { autoConnect: false, transports: ["websocket"] });
+
+  const socketUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? window.location.origin;
+  const socket = io(socketUrl, { autoConnect: false, transports: ["websocket"] });
 
       socket.on("connect", () => {
         updateDeviceStatus(selectedDeviceId, { isConnected: true, lastSeen: Date.now() });
@@ -204,7 +199,6 @@ export const WsProvider = ({ children }: { children: ReactNode }) => {
           } catch (e) {
             void e;
           }
-          socketRef.current = null;
         }
       });
 
