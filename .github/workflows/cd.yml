@@ -13,6 +13,7 @@ jobs:
     env:
       SERVICE_NAME: smartcanopy-website
       VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+      VITE_MQTT_BROKER_URL: ${{ secrets.VITE_MQTT_BROKER_URL }}
 
     steps:
       - name: Checkout Repository
@@ -27,6 +28,7 @@ jobs:
           echo "Creating .env file..."
           cat << EOF > .env
           VITE_API_BASE_URL=${VITE_API_BASE_URL}
+          VITE_MQTT_BROKER_URL=${VITE_MQTT_BROKER_URL}
           EOF
           echo ".env file ready"
 
