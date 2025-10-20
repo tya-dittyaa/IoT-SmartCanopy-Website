@@ -214,8 +214,9 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const markNoTelemetry = () => {
-      if (selectedDeviceId) {
-        updateDeviceStatus(selectedDeviceId, {
+      const monitoringId = monitoringDeviceIdRef.current;
+      if (monitoringId) {
+        updateDeviceStatus(monitoringId, {
           isConnected: false,
           lastSeen: null,
         });
@@ -233,6 +234,9 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
       const client = mqtt.connect(brokerUrl, {
         // enable auto reconnection
         reconnectPeriod: 1000,
+        clientId: `smartcanopy-web-client-${Math.random()
+          .toString(16)
+          .slice(3)}`,
       });
 
       client.on("connect", () => {
@@ -255,12 +259,10 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
             lastConnected: Date.now(),
           }));
 
-          // mark device connected if monitoring
-          if (
-            monitoringDeviceIdRef.current &&
-            selectedDeviceId === monitoringDeviceIdRef.current
-          ) {
-            updateDeviceStatus(selectedDeviceId, {
+          // mark device connected if we are monitoring one
+          const monitoringId = monitoringDeviceIdRef.current;
+          if (monitoringId) {
+            updateDeviceStatus(monitoringId, {
               isConnected: true,
               lastSeen: Date.now(),
             });
@@ -282,7 +284,6 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
           if (parts.length < 4) return;
           const deviceKey = parts[2];
 
-          if (selectedDeviceId && deviceKey !== selectedDeviceId) return;
           if (
             !monitoringDeviceIdRef.current ||
             monitoringDeviceIdRef.current !== deviceKey
@@ -362,8 +363,9 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
           isConnecting: false,
           connectionError: "Disconnected",
         }));
-        if (selectedDeviceId)
-          updateDeviceStatus(selectedDeviceId, {
+        const monitoringId = monitoringDeviceIdRef.current;
+        if (monitoringId)
+          updateDeviceStatus(monitoringId, {
             isConnected: false,
             lastSeen: null,
           });
@@ -379,14 +381,15 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
         isConnecting: false,
         connectionError: e instanceof Error ? e.message : "Connection failed",
       });
-      if (selectedDeviceId)
-        updateDeviceStatus(selectedDeviceId, {
+      const monitoringId = monitoringDeviceIdRef.current;
+      if (monitoringId)
+        updateDeviceStatus(monitoringId, {
           isConnected: false,
           lastSeen: null,
         });
       resetTelemetryData();
     }
-  }, [selectedDeviceId, resetTelemetryData, updateDeviceStatus]);
+  }, [resetTelemetryData, updateDeviceStatus]);
 
   const publishMode = useCallback(
     (mode: "auto" | "manual") => {
