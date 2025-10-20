@@ -224,7 +224,6 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
 
       setMqttStatus((prev) => ({
         ...prev,
-        isConnected: false,
         isConnecting: false,
         connectionError: "No telemetry received for 2 minutes",
       }));
