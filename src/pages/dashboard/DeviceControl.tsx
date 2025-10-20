@@ -11,11 +11,11 @@ export default function DeviceControl() {
     publishMode,
     publishServo,
     getSelectedDevice,
-    wsStatus,
+    mqttStatus,
   } = useDevice();
   const selectedDevice = getSelectedDevice();
   const deviceConnected = selectedDevice?.isConnected ?? false;
-  const connected = deviceConnected && wsStatus.isConnected;
+  const connected = deviceConnected && mqttStatus.isConnected;
   const telemetry = telemetryData;
 
   const getModeIcon = () => {

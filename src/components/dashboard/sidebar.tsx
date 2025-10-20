@@ -41,7 +41,7 @@ export function IoTDashboardSidebar({
     connectToDevice,
     disconnectFromDevice,
     refreshDevices,
-    wsStatus,
+    mqttStatus,
   } = useDevice();
   const selectedDevice = selectedDeviceId
     ? availableDevices.find((d) => d.deviceId === selectedDeviceId)
@@ -134,9 +134,9 @@ export function IoTDashboardSidebar({
             <div className="space-y-2">
               <div
                 className={`flex flex-col gap-1 px-2 py-2 rounded-md ${
-                  wsStatus.isConnected
+                  mqttStatus.isConnected
                     ? "bg-green-500/10"
-                    : wsStatus.isConnecting
+                    : mqttStatus.isConnecting
                     ? "bg-yellow-500/10"
                     : "bg-red-500/10"
                 }`}
@@ -144,19 +144,19 @@ export function IoTDashboardSidebar({
                 <div className="flex items-center gap-2">
                   <Radio
                     className={`h-4 w-4 ${
-                      wsStatus.isConnected
+                      mqttStatus.isConnected
                         ? "text-green-500"
-                        : wsStatus.isConnecting
+                        : mqttStatus.isConnecting
                         ? "text-yellow-500"
                         : "text-red-500"
                     }`}
                   />
-                  <span className="text-sm">WebSocket Connection</span>
+                  <span className="text-sm">MQTT Connection</span>
                 </div>
-                {wsStatus.isConnected && wsStatus.lastConnected ? (
+                {mqttStatus.isConnected && mqttStatus.lastConnected ? (
                   <div className="text-[11px] text-muted-foreground ml-6">
                     Last connected:{" "}
-                    {new Date(wsStatus.lastConnected).toLocaleString()}
+                    {new Date(mqttStatus.lastConnected).toLocaleString()}
                   </div>
                 ) : null}
               </div>

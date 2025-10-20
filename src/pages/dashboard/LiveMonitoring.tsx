@@ -6,8 +6,8 @@ import { useDevice } from "@/contexts/device-context";
 import { AlertCircle } from "lucide-react";
 
 export default function LiveMonitoring() {
-  const { wsStatus, telemetryData } = useDevice();
-  const connected = wsStatus.isConnected;
+  const { mqttStatus, telemetryData } = useDevice();
+  const connected = mqttStatus.isConnected;
   const telemetry = telemetryData;
 
   const getRainStatusIcon = () => {
