@@ -14,7 +14,8 @@ export default function LiveMonitoring() {
   const telemetry = telemetryData;
 
   const getRainStatusIcon = () => {
-    switch (telemetry.rainStatus) {
+    const status = telemetry?.rainStatus ?? "unknown";
+    switch (status) {
       case "rain":
         return "🌧️";
       case "dry":
@@ -25,7 +26,8 @@ export default function LiveMonitoring() {
   };
 
   const getServoStatusIcon = () => {
-    switch (telemetry.servoStatus) {
+    const status = telemetry?.servoStatus ?? "unknown";
+    switch (status) {
       case "open":
         return "🔓";
       case "closed":
@@ -65,7 +67,7 @@ export default function LiveMonitoring() {
             <div className="flex flex-col h-full">
               <div className="flex-1 flex items-center justify-center">
                 <TemperatureRadial
-                  value={connected ? telemetry.temperature : 0}
+                  value={connected ? telemetry.temperature : null}
                 />
               </div>
               <div className="text-center pb-2">
@@ -83,7 +85,7 @@ export default function LiveMonitoring() {
           <CardContent className="flex-1">
             <div className="flex flex-col h-full">
               <div className="flex-1 flex items-center justify-center">
-                <HumidityRadial value={connected ? telemetry.humidity : 0} />
+                <HumidityRadial value={connected ? telemetry.humidity : null} />
               </div>
               <div className="text-center pb-2">
                 <div className="text-xs text-muted-foreground">DHT11</div>
@@ -102,7 +104,7 @@ export default function LiveMonitoring() {
               <div className="flex-1 flex flex-col items-center justify-center">
                 <div className="text-8xl mb-4">{getRainStatusIcon()}</div>
                 <div className="text-xl font-bold">
-                  {connected ? telemetry.rainStatus : "Unknown"}
+                  {connected ? telemetry.rainStatus?.toUpperCase() : "UNKNOWN"}
                 </div>
               </div>
               <div className="text-center pb-2">
@@ -122,7 +124,7 @@ export default function LiveMonitoring() {
               <div className="flex-1 flex flex-col items-center justify-center">
                 <div className="text-8xl mb-4">{getServoStatusIcon()}</div>
                 <div className="text-xl font-bold">
-                  {connected ? telemetry.servoStatus : "Unknown"}
+                  {connected ? telemetry.servoStatus?.toUpperCase() : "UNKNOWN"}
                 </div>
               </div>
               <div className="text-center pb-2">

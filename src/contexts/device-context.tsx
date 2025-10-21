@@ -189,7 +189,6 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
   const monitoringDeviceIdRef = useRef<string | null>(null);
 
   const connectMQTT = useCallback(() => {
-    // Use MQTT over WebSocket as the underlying transport.
     if (socketRef.current) return;
 
     setMqttStatus({
