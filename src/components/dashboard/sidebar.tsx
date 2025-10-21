@@ -6,7 +6,7 @@ import {
   TrendingUp,
   Zap,
 } from "lucide-react";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 
 import DeviceSelector from "@/components/dashboard/device-selector";
@@ -76,18 +76,12 @@ export function IoTDashboardSidebar({
 }: React.ComponentProps<typeof Sidebar>) {
   const {
     selectedDeviceId,
-    availableDevices,
     connectToDevice,
     disconnectFromDevice,
     refreshDevices,
     mqttStatus,
+    selectedDevice,
   } = useDevice();
-
-  const selectedDevice = useMemo(() => {
-    return selectedDeviceId
-      ? availableDevices.find((d) => d.deviceId === selectedDeviceId)
-      : undefined;
-  }, [selectedDeviceId, availableDevices]);
 
   const handleConnect = useCallback(() => {
     if (selectedDeviceId) {

@@ -14,7 +14,7 @@ import {
 import { useDevice } from "@/contexts/device-context";
 import { cn } from "@/lib/utils";
 import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
-import React from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface DeviceSelectorProps {
   onDeviceSelect?: (deviceId: string) => void;
@@ -23,36 +23,37 @@ interface DeviceSelectorProps {
 export default function DeviceSelector({
   onDeviceSelect,
 }: DeviceSelectorProps) {
-  const { selectedDeviceId, setSelectedDeviceId, availableDevices } =
-    useDevice();
+  const {
+    selectedDeviceId,
+    setSelectedDeviceId,
+    availableDevices,
+    selectedDevice,
+  } = useDevice();
 
-  const [open, setOpen] = React.useState(false);
-
-  const selectedDevice = selectedDeviceId
-    ? availableDevices.find((d) => d.deviceId === selectedDeviceId)
-    : undefined;
+  const [open, setOpen] = useState(false);
 
   const isSelectedDeviceConnected = !!selectedDevice?.isConnected;
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isSelectedDeviceConnected) setOpen(false);
   }, [isSelectedDeviceConnected]);
 
-  const handleDeviceSelect = (deviceId: string) => {
-    const newSelectedId = deviceId === selectedDeviceId ? "" : deviceId;
-    setSelectedDeviceId(newSelectedId);
-    setOpen(false);
-    onDeviceSelect?.(newSelectedId);
-  };
+  const handleDeviceSelect = useCallback(
+    (currentValue: string) => {
+      const newSelectedId =
+        currentValue === selectedDeviceId ? "" : currentValue;
+      setSelectedDeviceId(newSelectedId);
+      setOpen(false);
+      onDeviceSelect?.(newSelectedId);
+    },
+    [selectedDeviceId, setSelectedDeviceId, onDeviceSelect]
+  );
 
-  const getSelectedDeviceStatus = (): string => {
+  const buttonText = useMemo(() => {
+    if (availableDevices.length === 0) return "No device available";
     if (!selectedDeviceId) return "No device selected";
-
-    const selectedDevice = availableDevices.find(
-      (device) => device.deviceId === selectedDeviceId
-    );
     return selectedDevice ? selectedDevice.name : selectedDeviceId;
-  };
+  }, [availableDevices.length, selectedDeviceId, selectedDevice]);
 
   return (
     <div>
@@ -68,9 +69,7 @@ export default function DeviceSelector({
               availableDevices.length === 0 || isSelectedDeviceConnected
             }
           >
-            {availableDevices.length === 0
-              ? "No device available"
-              : getSelectedDeviceStatus()}
+            {buttonText}
             <ChevronsUpDownIcon className="ml-2 h-3 w-3 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
@@ -85,7 +84,7 @@ export default function DeviceSelector({
                       <CommandItem
                         key={device.deviceId}
                         value={device.deviceId}
-                        onSelect={() => handleDeviceSelect(device.deviceId)}
+                        onSelect={handleDeviceSelect}
                         className="text-sm py-3"
                       >
                         <CheckIcon
