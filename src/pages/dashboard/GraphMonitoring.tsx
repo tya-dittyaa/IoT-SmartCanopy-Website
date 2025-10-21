@@ -100,6 +100,8 @@ export default function GraphMonitoring() {
 
   useEffect(() => {
     if (!canFetch) {
+      setTempData([]);
+      setHumidityData([]);
       setNextRefresh(REFRESH_INTERVAL);
       return;
     }
