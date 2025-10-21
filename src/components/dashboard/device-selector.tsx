@@ -28,6 +28,16 @@ export default function DeviceSelector({
 
   const [open, setOpen] = React.useState(false);
 
+  const selectedDevice = selectedDeviceId
+    ? availableDevices.find((d) => d.deviceId === selectedDeviceId)
+    : undefined;
+
+  const isSelectedDeviceConnected = !!selectedDevice?.isConnected;
+
+  React.useEffect(() => {
+    if (isSelectedDeviceConnected) setOpen(false);
+  }, [isSelectedDeviceConnected]);
+
   const handleDeviceSelect = (deviceId: string) => {
     const newSelectedId = deviceId === selectedDeviceId ? "" : deviceId;
     setSelectedDeviceId(newSelectedId);
@@ -54,7 +64,9 @@ export default function DeviceSelector({
             aria-expanded={open}
             className="w-full justify-between text-sm h-10"
             size="default"
-            disabled={availableDevices.length === 0}
+            disabled={
+              availableDevices.length === 0 || isSelectedDeviceConnected
+            }
           >
             {availableDevices.length === 0
               ? "No device available"
