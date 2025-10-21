@@ -38,10 +38,9 @@ export default function GraphMonitoring() {
   const [humidityData, setHumidityData] =
     useState<Array<{ time: string; hum: number }>>(humidityDataInit);
 
-  const { selectedDeviceId, mqttStatus, getSelectedDevice } = useDevice();
+  const { selectedDeviceId, mqttStatus, selectedDevice } = useDevice();
 
   const isConnected = mqttStatus?.isConnected ?? false;
-  const selectedDevice = getSelectedDevice();
   const deviceIsConnected = selectedDevice?.isConnected ?? false;
   const canFetch = !!selectedDeviceId && isConnected && deviceIsConnected;
 

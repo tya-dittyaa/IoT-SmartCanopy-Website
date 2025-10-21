@@ -6,6 +6,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -48,14 +49,14 @@ export interface DeviceConnectionStatus {
 
 export interface DeviceContextType {
   selectedDeviceId: string;
-  setSelectedDeviceId: (deviceId: string) => void;
+  setSelectedDeviceId: React.Dispatch<React.SetStateAction<string>>;
   availableDevices: Device[];
   updateDeviceStatus: (deviceId: string, status: Partial<Device>) => void;
-  getSelectedDevice: () => Device | undefined;
+  selectedDevice: Device | undefined;
   mqttStatus: DeviceConnectionStatus;
-  updateMqttStatus: (status: DeviceConnectionStatus) => void;
+  setMqttStatus: React.Dispatch<React.SetStateAction<DeviceConnectionStatus>>;
   telemetryData: TelemetryData;
-  updateTelemetryData: (data: TelemetryData) => void;
+  setTelemetryData: React.Dispatch<React.SetStateAction<TelemetryData>>;
   connectToDevice: () => void;
   disconnectFromDevice: () => void;
   publishMode: (mode: "auto" | "manual") => void;
@@ -81,10 +82,7 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
     mode: "unknown",
   });
   const socketRef = useRef<MqttClient | null>(null);
-  const [availableDevicesState, setAvailableDevicesState] = useState<Device[]>(
-    []
-  );
-  const availableDevices = availableDevicesState;
+  const [availableDevices, setAvailableDevices] = useState<Device[]>([]);
 
   const resetTelemetryData = useCallback(() => {
     setTelemetryData({
@@ -98,7 +96,7 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
 
   const updateDeviceStatus = useCallback(
     (deviceId: string, status: Partial<Device>) => {
-      setAvailableDevicesState((prev) =>
+      setAvailableDevices((prev) =>
         prev.map((item) =>
           item.deviceId === deviceId ? { ...item, ...status } : item
         )
@@ -107,40 +105,28 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
     []
   );
 
-  const updateMqttStatus = useCallback(
-    (status: DeviceConnectionStatus) => setMqttStatus(status),
-    []
-  );
-
-  const updateTelemetryData = useCallback(
-    (data: TelemetryData) => setTelemetryData(data),
-    []
-  );
-
   const refreshDevices = useCallback(async () => {
     try {
       const data = await fetchDevices();
       if (!Array.isArray(data)) return;
-      const configs: Device[] = data
+
+      const newConfigs = data
         .map((d) => ({
           name: d.deviceName ?? "unknown",
           deviceId: d.deviceKey ?? d.id,
-          isConnected:
-            availableDevices.find((a) => a.deviceId === (d.deviceKey ?? d.id))
-              ?.isConnected ?? false,
-          lastSeen:
-            availableDevices.find((a) => a.deviceId === (d.deviceKey ?? d.id))
-              ?.lastSeen ?? null,
         }))
-        .filter(
-          (c) => c.deviceId && typeof c.deviceId === "string"
-        ) as Device[];
+        .filter((c) => c.deviceId && typeof c.deviceId === "string") as Omit<
+        Device,
+        "isConnected" | "lastSeen"
+      >[];
 
-      setAvailableDevicesState((prev) => {
+      setAvailableDevices((prev) => {
         const byId = new Map(prev.map((p) => [p.deviceId, p]));
-        for (const cfg of configs) {
+        for (const cfg of newConfigs) {
+          const existing = byId.get(cfg.deviceId);
           byId.set(cfg.deviceId, {
-            ...byId.get(cfg.deviceId),
+            isConnected: existing?.isConnected ?? false,
+            lastSeen: existing?.lastSeen ?? null,
             ...cfg,
           } as Device);
         }
@@ -149,9 +135,9 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
     } catch (e) {
       console.error("Error refreshing devices:", e);
     }
-  }, [availableDevices]);
+  }, []);
 
-  const getSelectedDevice = useCallback((): Device | undefined => {
+  const selectedDevice = useMemo(() => {
     return availableDevices.find(
       (device) => device.deviceId === selectedDeviceId
     );
@@ -174,7 +160,7 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
             .filter(
               (c) => c.deviceId && typeof c.deviceId === "string"
             ) as Device[];
-          if (configs.length > 0) setAvailableDevicesState(configs);
+          if (configs.length > 0) setAvailableDevices(configs);
         }
       } catch (e) {
         console.error("Error fetching devices:", e);
@@ -230,7 +216,6 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       const client = mqtt.connect(brokerUrl, {
-        // enable auto reconnection
         reconnectPeriod: 1000,
         clientId: `smartcanopy-web-client-${Math.random()
           .toString(16)
@@ -238,7 +223,6 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
       });
 
       client.on("connect", () => {
-        // subscribe to wildcard telemetry topic
         client.subscribe("mqtt/devices/+/telemetry", (err) => {
           if (err) {
             setMqttStatus({
@@ -257,7 +241,6 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
             lastConnected: Date.now(),
           }));
 
-          // mark device connected if we are monitoring one
           const monitoringId = monitoringDeviceIdRef.current;
           if (monitoringId) {
             updateDeviceStatus(monitoringId, {
@@ -276,9 +259,7 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
 
       client.on("message", (topic: string, message: Buffer) => {
         try {
-          // topic: mqtt/devices/{deviceKey}/telemetry
           const parts = topic.split("/");
-          // Expecting ['mqtt','devices','{deviceKey}','telemetry']
           if (parts.length < 4) return;
           const deviceKey = parts[2];
 
@@ -292,7 +273,6 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
           try {
             raw = JSON.parse(message.toString());
           } catch {
-            // ignore non-json
             return;
           }
 
@@ -432,7 +412,7 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
     resetTelemetryData();
 
     if (selectedDeviceId) {
-      setAvailableDevicesState((prev) => {
+      setAvailableDevices((prev) => {
         if (prev.find((d) => d.deviceId === selectedDeviceId)) return prev;
         return [
           ...prev,
@@ -457,19 +437,6 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
       return () => clearTimeout(timer);
     }
   }, [mqttStatus.connectionError]);
-
-  useEffect(() => {
-    return () => {
-      if (socketRef.current) {
-        try {
-          disconnectMqtt(socketRef.current);
-        } catch {
-          // ignore
-        }
-        socketRef.current = null;
-      }
-    };
-  }, []);
 
   const connectToDevice = useCallback(() => {
     if (!selectedDeviceId) return;
@@ -517,11 +484,11 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
         setSelectedDeviceId,
         availableDevices,
         updateDeviceStatus,
-        getSelectedDevice,
+        selectedDevice,
         mqttStatus,
-        updateMqttStatus,
+        setMqttStatus,
         telemetryData,
-        updateTelemetryData,
+        setTelemetryData,
         connectToDevice,
         disconnectFromDevice,
         publishMode,

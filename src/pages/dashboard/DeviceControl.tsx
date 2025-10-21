@@ -10,10 +10,9 @@ export default function DeviceControl() {
     telemetryData,
     publishMode,
     publishServo,
-    getSelectedDevice,
+    selectedDevice,
     mqttStatus,
   } = useDevice();
-  const selectedDevice = getSelectedDevice();
   const deviceConnected = selectedDevice?.isConnected ?? false;
   const connected = deviceConnected && mqttStatus.isConnected;
   const telemetry = telemetryData;
