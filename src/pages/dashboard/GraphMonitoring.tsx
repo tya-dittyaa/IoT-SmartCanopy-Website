@@ -29,46 +29,58 @@ import type { TelemetryDto } from "@/types/telemetry";
 
 const tempDataInit: Array<{ time: string; temp: number }> = [];
 const humidityDataInit: Array<{ time: string; hum: number }> = [];
+const REFRESH_INTERVAL = 30; // seconds (fixed)
+const ranges = RANGES;
 
 export default function GraphMonitoring() {
   const [selectedRange, setSelectedRange] = useState<Range>("15m");
-
   const [tempData, setTempData] =
     useState<Array<{ time: string; temp: number }>>(tempDataInit);
   const [humidityData, setHumidityData] =
     useState<Array<{ time: string; hum: number }>>(humidityDataInit);
+  const [nextRefresh, setNextRefresh] = useState<number>(REFRESH_INTERVAL);
 
   const { selectedDeviceId, mqttStatus, selectedDevice } = useDevice();
 
-  const isConnected = mqttStatus?.isConnected ?? false;
-  const deviceIsConnected = selectedDevice?.isConnected ?? false;
-  const canFetch = !!selectedDeviceId && isConnected && deviceIsConnected;
+  const isConnected = useMemo(
+    () => mqttStatus?.isConnected ?? false,
+    [mqttStatus]
+  );
+  const deviceIsConnected = useMemo(
+    () => selectedDevice?.isConnected ?? false,
+    [selectedDevice]
+  );
 
-  const filteredTempData = useMemo(() => tempData, [tempData]);
-  const filteredHumidityData = useMemo(() => humidityData, [humidityData]);
+  const canFetch = useMemo(
+    () => !!selectedDeviceId && isConnected && deviceIsConnected,
+    [selectedDeviceId, isConnected, deviceIsConnected]
+  );
 
-  const latestTemp =
-    filteredTempData[filteredTempData.length - 1] ??
-    tempData[tempData.length - 1];
-  const latestHum =
-    filteredHumidityData[filteredHumidityData.length - 1] ??
-    humidityData[humidityData.length - 1];
-
-  const REFRESH_INTERVAL = 30; // seconds (fixed)
-  const [nextRefresh, setNextRefresh] = useState<number>(REFRESH_INTERVAL);
+  const latestTemp = useMemo(
+    () => (tempData.length > 0 ? tempData[tempData.length - 1] : undefined),
+    [tempData]
+  );
+  const latestHum = useMemo(
+    () =>
+      humidityData.length > 0
+        ? humidityData[humidityData.length - 1]
+        : undefined,
+    [humidityData]
+  );
 
   const fetchTelemetry = useCallback(async () => {
     let mounted = true;
+    if (!selectedDeviceId || !canFetch) {
+      setTempData([]);
+      setHumidityData([]);
+      return () => {
+        mounted = false;
+      };
+    }
 
     try {
       const minutes = RANGE_TO_MINUTES[selectedRange] ?? 1000;
       const deviceKey = selectedDeviceId;
-
-      if (!deviceKey || !canFetch) {
-        setTempData([]);
-        setHumidityData([]);
-        return;
-      }
 
       const [tempArr, humArr] = await Promise.all([
         fetchTemperatureTelemetry(deviceKey, minutes),
@@ -119,9 +131,30 @@ export default function GraphMonitoring() {
     }, 1000);
 
     return () => clearInterval(tick);
-  }, [fetchTelemetry, selectedDeviceId, canFetch]);
+  }, [fetchTelemetry, canFetch]);
 
-  const ranges = RANGES;
+  const handleRangeChange = useCallback(
+    (v: string) => {
+      if (canFetch) {
+        setSelectedRange(v as Range);
+      }
+    },
+    [canFetch]
+  );
+
+  const handleRefresh = useCallback(() => {
+    if (!selectedDeviceId || !canFetch) return;
+    void fetchTelemetry();
+    setNextRefresh(REFRESH_INTERVAL);
+  }, [selectedDeviceId, canFetch, fetchTelemetry]);
+
+  const combinedData = useMemo(() => {
+    return tempData.map((d, i) => ({
+      time: d.time,
+      temp: d.temp,
+      hum: humidityData[i]?.hum,
+    }));
+  }, [tempData, humidityData]);
 
   return (
     <div className="space-y-6">
@@ -148,9 +181,7 @@ export default function GraphMonitoring() {
           <Tabs
             defaultValue="15m"
             value={selectedRange}
-            onValueChange={(v: string) =>
-              canFetch && setSelectedRange(v as Range)
-            }
+            onValueChange={handleRangeChange}
             className={`w-full md:w-[520px] ${
               !canFetch ? "opacity-70 pointer-events-none" : ""
             }`}
@@ -174,11 +205,7 @@ export default function GraphMonitoring() {
           <div className="flex-none order-1 md:order-2">
             <button
               type="button"
-              onClick={() => {
-                if (!selectedDeviceId || !canFetch) return;
-                void fetchTelemetry();
-                setNextRefresh(REFRESH_INTERVAL);
-              }}
+              onClick={handleRefresh}
               disabled={!selectedDeviceId || !canFetch}
               aria-label="Refresh now"
               title="Refresh now"
@@ -197,7 +224,6 @@ export default function GraphMonitoring() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 auto-rows-fr">
-        {/* Temperature Card */}
         <Card className="flex flex-col h-full">
           <CardHeader>
             <div>
@@ -206,7 +232,7 @@ export default function GraphMonitoring() {
             </div>
           </CardHeader>
           <CardContent className="flex-1">
-            <TemperatureArea data={filteredTempData} />
+            <TemperatureArea data={tempData} />
           </CardContent>
           <CardFooter>
             <div className="flex w-full items-center gap-2 text-sm">
@@ -217,7 +243,6 @@ export default function GraphMonitoring() {
           </CardFooter>
         </Card>
 
-        {/* Humidity Card */}
         <Card className="flex flex-col h-full">
           <CardHeader>
             <div>
@@ -226,7 +251,7 @@ export default function GraphMonitoring() {
             </div>
           </CardHeader>
           <CardContent className="flex-1">
-            <HumidityArea data={filteredHumidityData} />
+            <HumidityArea data={humidityData} />
           </CardContent>
           <CardFooter>
             <div className="flex w-full items-center gap-2 text-sm">
@@ -237,7 +262,6 @@ export default function GraphMonitoring() {
           </CardFooter>
         </Card>
 
-        {/* Combined Card */}
         <Card className="flex flex-col h-full">
           <CardHeader>
             <div>
@@ -246,13 +270,7 @@ export default function GraphMonitoring() {
             </div>
           </CardHeader>
           <CardContent className="flex-1">
-            <CombinedArea
-              data={filteredTempData.map((d, i) => ({
-                time: d.time,
-                temp: d.temp,
-                hum: filteredHumidityData[i]?.hum,
-              }))}
-            />
+            <CombinedArea data={combinedData} />
           </CardContent>
           <CardFooter>
             <div className="flex w-full items-center justify-between gap-2 text-sm">
