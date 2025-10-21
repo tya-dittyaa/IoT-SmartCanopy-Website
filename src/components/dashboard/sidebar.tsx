@@ -50,12 +50,15 @@ export function IoTDashboardSidebar({
 
   function RefreshButton({
     refreshDevices,
+    isDisabled,
   }: {
     refreshDevices?: () => Promise<void>;
+    isDisabled?: boolean;
   }) {
     const [refreshing, setRefreshing] = useState(false);
 
     const onRefresh = async () => {
+      if (isDisabled) return;
       if (!refreshDevices) return;
       try {
         setRefreshing(true);
@@ -69,7 +72,12 @@ export function IoTDashboardSidebar({
       <button
         onClick={onRefresh}
         title="Refresh devices"
-        className={`w-full inline-flex items-center justify-center rounded-md px-2 text-sm font-medium text-white h-10 bg-slate-600`}
+        disabled={isDisabled}
+        className={`w-full inline-flex items-center justify-center rounded-md px-2 text-sm font-medium h-10 ${
+          isDisabled
+            ? "bg-gray-400 text-white cursor-not-allowed"
+            : "bg-slate-600 text-white"
+        }`}
       >
         <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
       </button>
@@ -122,7 +130,10 @@ export function IoTDashboardSidebar({
                 )}
               </div>
               <div className="flex-1">
-                <RefreshButton refreshDevices={refreshDevices} />
+                <RefreshButton
+                  refreshDevices={refreshDevices}
+                  isDisabled={selectedDeviceStatus?.isConnected}
+                />
               </div>
             </div>
           </SidebarGroupContent>
