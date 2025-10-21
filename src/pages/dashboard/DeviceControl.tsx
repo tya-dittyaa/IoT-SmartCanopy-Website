@@ -40,8 +40,11 @@ export default function DeviceControl() {
     }
   };
 
+  const isModeKnown = telemetry.mode !== "unknown";
+  const isServoKnown = telemetry.servoStatus !== "unknown";
   const isServoOpen = telemetry.servoStatus === "open";
-  const canControlServo = connected && telemetry.mode === "manual";
+  const canControlServo =
+    connected && isModeKnown && telemetry.mode === "manual";
 
   return (
     <div className="space-y-6">
@@ -90,7 +93,9 @@ export default function DeviceControl() {
             <div className="space-y-3">
               <Button
                 onClick={() => publishMode("auto")}
-                disabled={!connected || telemetry.mode === "auto"}
+                disabled={
+                  !connected || !isModeKnown || telemetry.mode === "auto"
+                }
                 variant={
                   connected && telemetry.mode === "auto" ? "default" : "outline"
                 }
@@ -100,7 +105,9 @@ export default function DeviceControl() {
               </Button>
               <Button
                 onClick={() => publishMode("manual")}
-                disabled={!connected || telemetry.mode === "manual"}
+                disabled={
+                  !connected || !isModeKnown || telemetry.mode === "manual"
+                }
                 variant={
                   connected && telemetry.mode === "manual"
                     ? "default"
@@ -129,23 +136,39 @@ export default function DeviceControl() {
                 variant={connected && isServoOpen ? "default" : "secondary"}
                 className="text-lg py-2 px-4"
               >
-                {connected ? telemetry.servoStatus : "UNKNOWN"}
+                {connected ? telemetry.servoStatus?.toUpperCase() : "UNKNOWN"}
               </Badge>
             </div>
 
             <div className="space-y-3">
               <Button
                 onClick={() => publishServo("open")}
-                disabled={!canControlServo || isServoOpen}
-                variant={connected && isServoOpen ? "default" : "outline"}
+                disabled={
+                  !canControlServo ||
+                  isServoOpen ||
+                  telemetry.servoStatus === "unknown"
+                }
+                variant={
+                  connected && isServoKnown && isServoOpen
+                    ? "default"
+                    : "outline"
+                }
                 className="w-full"
               >
                 🔓 Open Canopy
               </Button>
               <Button
                 onClick={() => publishServo("close")}
-                disabled={!canControlServo || !isServoOpen}
-                variant={connected && !isServoOpen ? "default" : "outline"}
+                disabled={
+                  !canControlServo ||
+                  !isServoOpen ||
+                  telemetry.servoStatus === "unknown"
+                }
+                variant={
+                  connected && isServoKnown && !isServoOpen
+                    ? "default"
+                    : "outline"
+                }
                 className="w-full"
               >
                 🔒 Close Canopy
