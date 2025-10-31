@@ -29,7 +29,7 @@ export const HumidityArea: React.FC<HumidityAreaProps> = ({ data }) => {
             axisLine={false}
             tickMargin={8}
           />
-          <YAxis yAxisId="left" domain={["dataMin - 5", "dataMax + 5"]} />
+          <YAxis yAxisId="left" domain={[0, 100]} allowDecimals={false} />
           <ChartTooltip
             cursor={false}
             content={<ChartTooltipContent indicator="line" />}

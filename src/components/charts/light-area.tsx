@@ -14,7 +14,7 @@ interface LightAreaProps {
 }
 
 const chartConfig = {
-  light: { label: "Light Intensity", color: "#f59e0b" },
+  light: { label: "Light Intensity (%)", color: "#f59e0b" },
 } satisfies ChartConfig;
 
 export const LightArea: React.FC<LightAreaProps> = ({ data }) => {
@@ -29,7 +29,7 @@ export const LightArea: React.FC<LightAreaProps> = ({ data }) => {
             axisLine={false}
             tickMargin={8}
           />
-          <YAxis yAxisId="left" allowDecimals={false} />
+          <YAxis yAxisId="left" domain={[0, 100]} allowDecimals={false} />
           <ChartTooltip
             cursor={false}
             content={<ChartTooltipContent indicator="line" />}

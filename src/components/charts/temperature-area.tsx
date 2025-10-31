@@ -30,7 +30,7 @@ export const TemperatureArea: React.FC<TemperatureAreaProps> = ({ data }) => {
             axisLine={false}
             tickMargin={8}
           />
-          <YAxis yAxisId="left" domain={["dataMin - 2", "dataMax + 2"]} />
+          <YAxis yAxisId="left" domain={[0, 100]} allowDecimals={false} />
           <ChartTooltip
             cursor={false}
             content={<ChartTooltipContent indicator="line" />}
