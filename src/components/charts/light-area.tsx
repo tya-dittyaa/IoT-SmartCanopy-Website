@@ -9,18 +9,18 @@ import {
 import React from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
-interface HumidityAreaProps {
-  data: Array<{ time: string; hum: number }>;
+interface LightAreaProps {
+  data: Array<{ time: string; light: number }>;
 }
 
 const chartConfig = {
-  hum: { label: "Humidity (%)", color: "#3b82f6" },
+  light: { label: "Light Intensity (%)", color: "#f59e0b" },
 } satisfies ChartConfig;
 
-export const HumidityArea: React.FC<HumidityAreaProps> = ({ data }) => {
+export const LightArea: React.FC<LightAreaProps> = ({ data }) => {
   return (
     <div className="w-full h-full">
-      <ChartContainer config={{ hum: chartConfig.hum }}>
+      <ChartContainer config={{ light: chartConfig.light }}>
         <AreaChart data={data} margin={{ left: 12, right: 12 }}>
           <CartesianGrid vertical={false} />
           <XAxis
@@ -37,12 +37,12 @@ export const HumidityArea: React.FC<HumidityAreaProps> = ({ data }) => {
           <ChartLegend content={<ChartLegendContent />} />
           <Area
             yAxisId="left"
-            dataKey="hum"
-            name="(%)"
-            type="natural"
-            fill="var(--color-hum)"
+            dataKey="light"
+            name="Light"
+            type="basis"
+            fill="var(--color-light, #f59e0b)"
             fillOpacity={0.4}
-            stroke="var(--color-hum)"
+            stroke="var(--color-light, #f59e0b)"
           />
         </AreaChart>
       </ChartContainer>
@@ -50,4 +50,4 @@ export const HumidityArea: React.FC<HumidityAreaProps> = ({ data }) => {
   );
 };
 
-export default HumidityArea;
+export default LightArea;

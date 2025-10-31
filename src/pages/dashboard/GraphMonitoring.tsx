@@ -18,10 +18,15 @@ export const description = "Graph monitoring for Temperature and Humidity";
 
 import {
   fetchHumidityTelemetry,
+  fetchLightTelemetry,
+  fetchRainTelemetry,
+  fetchServoTelemetry,
   fetchTemperatureTelemetry,
 } from "@/api/telemetries";
-import CombinedArea from "@/components/charts/combined-area";
 import HumidityArea from "@/components/charts/humidity-area";
+import LightArea from "@/components/charts/light-area";
+import RainArea from "@/components/charts/rain-area";
+import ServoArea from "@/components/charts/servo-area";
 import TemperatureArea from "@/components/charts/temperature-area";
 import { useDevice } from "@/contexts/device-context";
 import RANGES, { RANGE_TO_MINUTES, type Range } from "@/types/range";
@@ -29,51 +34,86 @@ import type { TelemetryDto } from "@/types/telemetry";
 
 const tempDataInit: Array<{ time: string; temp: number }> = [];
 const humidityDataInit: Array<{ time: string; hum: number }> = [];
+const lightDataInit: Array<{ time: string; light: number }> = [];
+const REFRESH_INTERVAL = 30; // seconds (fixed)
+const ranges = RANGES;
 
 export default function GraphMonitoring() {
   const [selectedRange, setSelectedRange] = useState<Range>("15m");
-
   const [tempData, setTempData] =
     useState<Array<{ time: string; temp: number }>>(tempDataInit);
   const [humidityData, setHumidityData] =
     useState<Array<{ time: string; hum: number }>>(humidityDataInit);
-
-  const { selectedDeviceId, wsStatus, getSelectedDevice } = useDevice();
-
-  const isConnected = wsStatus?.isConnected ?? false;
-  const selectedDevice = getSelectedDevice();
-  const deviceIsConnected = selectedDevice?.isConnected ?? false;
-  const canFetch = !!selectedDeviceId && isConnected && deviceIsConnected;
-
-  const filteredTempData = useMemo(() => tempData, [tempData]);
-  const filteredHumidityData = useMemo(() => humidityData, [humidityData]);
-
-  const latestTemp =
-    filteredTempData[filteredTempData.length - 1] ??
-    tempData[tempData.length - 1];
-  const latestHum =
-    filteredHumidityData[filteredHumidityData.length - 1] ??
-    humidityData[humidityData.length - 1];
-
-  const REFRESH_INTERVAL = 30; // seconds (fixed)
+  const [rainData, setRainData] = useState<
+    Array<{ time: string; rain: number }>
+  >([]);
+  const [servoData, setServoData] = useState<
+    Array<{ time: string; servo: number }>
+  >([]);
+  const [lightData, setLightData] =
+    useState<Array<{ time: string; light: number }>>(lightDataInit);
   const [nextRefresh, setNextRefresh] = useState<number>(REFRESH_INTERVAL);
+
+  const { selectedDeviceId, mqttStatus, selectedDevice } = useDevice();
+
+  const isConnected = useMemo(
+    () => mqttStatus?.isConnected ?? false,
+    [mqttStatus]
+  );
+  const deviceIsConnected = useMemo(
+    () => selectedDevice?.isConnected ?? false,
+    [selectedDevice]
+  );
+
+  const canFetch = useMemo(
+    () => !!selectedDeviceId && isConnected && deviceIsConnected,
+    [selectedDeviceId, isConnected, deviceIsConnected]
+  );
+
+  const latestTemp = useMemo(
+    () => (tempData.length > 0 ? tempData[tempData.length - 1] : undefined),
+    [tempData]
+  );
+  const latestHum = useMemo(
+    () =>
+      humidityData.length > 0
+        ? humidityData[humidityData.length - 1]
+        : undefined,
+    [humidityData]
+  );
+  const latestRain = useMemo(
+    () => (rainData.length > 0 ? rainData[rainData.length - 1] : undefined),
+    [rainData]
+  );
+  const latestServo = useMemo(
+    () => (servoData.length > 0 ? servoData[servoData.length - 1] : undefined),
+    [servoData]
+  );
+  const latestLight = useMemo(
+    () => (lightData.length > 0 ? lightData[lightData.length - 1] : undefined),
+    [lightData]
+  );
 
   const fetchTelemetry = useCallback(async () => {
     let mounted = true;
+    if (!selectedDeviceId || !canFetch) {
+      setTempData([]);
+      setHumidityData([]);
+      return () => {
+        mounted = false;
+      };
+    }
 
     try {
       const minutes = RANGE_TO_MINUTES[selectedRange] ?? 1000;
       const deviceKey = selectedDeviceId;
 
-      if (!deviceKey || !canFetch) {
-        setTempData([]);
-        setHumidityData([]);
-        return;
-      }
-
-      const [tempArr, humArr] = await Promise.all([
+      const [tempArr, humArr, rainArr, servoArr, lightArr] = await Promise.all([
         fetchTemperatureTelemetry(deviceKey, minutes),
         fetchHumidityTelemetry(deviceKey, minutes),
+        fetchRainTelemetry(deviceKey, minutes),
+        fetchServoTelemetry(deviceKey, minutes),
+        fetchLightTelemetry(deviceKey, minutes),
       ]);
 
       if (!mounted) return;
@@ -86,9 +126,24 @@ export default function GraphMonitoring() {
         time: h.time ? new Date(h.time).toLocaleString() : h.time,
         hum: h.value,
       }));
+      const rains = (rainArr || []).map((r: TelemetryDto) => ({
+        time: r.time ? new Date(r.time).toLocaleString() : r.time,
+        rain: r.value,
+      }));
+      const servos = (servoArr || []).map((s: TelemetryDto) => ({
+        time: s.time ? new Date(s.time).toLocaleString() : s.time,
+        servo: s.value,
+      }));
+      const lights = (lightArr || []).map((l: TelemetryDto) => ({
+        time: l.time ? new Date(l.time).toLocaleString() : l.time,
+        light: l.value,
+      }));
 
       setTempData(temps);
       setHumidityData(hums);
+      setRainData(rains);
+      setServoData(servos);
+      setLightData(lights);
     } catch {
       // swallow error
     }
@@ -100,6 +155,8 @@ export default function GraphMonitoring() {
 
   useEffect(() => {
     if (!canFetch) {
+      setTempData([]);
+      setHumidityData([]);
       setNextRefresh(REFRESH_INTERVAL);
       return;
     }
@@ -118,9 +175,22 @@ export default function GraphMonitoring() {
     }, 1000);
 
     return () => clearInterval(tick);
-  }, [fetchTelemetry, selectedDeviceId, canFetch]);
+  }, [fetchTelemetry, canFetch]);
 
-  const ranges = RANGES;
+  const handleRangeChange = useCallback(
+    (v: string) => {
+      if (canFetch) {
+        setSelectedRange(v as Range);
+      }
+    },
+    [canFetch]
+  );
+
+  const handleRefresh = useCallback(() => {
+    if (!selectedDeviceId || !canFetch) return;
+    void fetchTelemetry();
+    setNextRefresh(REFRESH_INTERVAL);
+  }, [selectedDeviceId, canFetch, fetchTelemetry]);
 
   return (
     <div className="space-y-6">
@@ -147,9 +217,7 @@ export default function GraphMonitoring() {
           <Tabs
             defaultValue="15m"
             value={selectedRange}
-            onValueChange={(v: string) =>
-              canFetch && setSelectedRange(v as Range)
-            }
+            onValueChange={handleRangeChange}
             className={`w-full md:w-[520px] ${
               !canFetch ? "opacity-70 pointer-events-none" : ""
             }`}
@@ -173,11 +241,7 @@ export default function GraphMonitoring() {
           <div className="flex-none order-1 md:order-2">
             <button
               type="button"
-              onClick={() => {
-                if (!selectedDeviceId || !canFetch) return;
-                void fetchTelemetry();
-                setNextRefresh(REFRESH_INTERVAL);
-              }}
+              onClick={handleRefresh}
               disabled={!selectedDeviceId || !canFetch}
               aria-label="Refresh now"
               title="Refresh now"
@@ -196,7 +260,6 @@ export default function GraphMonitoring() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 auto-rows-fr">
-        {/* Temperature Card */}
         <Card className="flex flex-col h-full">
           <CardHeader>
             <div>
@@ -205,7 +268,7 @@ export default function GraphMonitoring() {
             </div>
           </CardHeader>
           <CardContent className="flex-1">
-            <TemperatureArea data={filteredTempData} />
+            <TemperatureArea data={tempData} />
           </CardContent>
           <CardFooter>
             <div className="flex w-full items-center gap-2 text-sm">
@@ -216,7 +279,6 @@ export default function GraphMonitoring() {
           </CardFooter>
         </Card>
 
-        {/* Humidity Card */}
         <Card className="flex flex-col h-full">
           <CardHeader>
             <div>
@@ -225,7 +287,7 @@ export default function GraphMonitoring() {
             </div>
           </CardHeader>
           <CardContent className="flex-1">
-            <HumidityArea data={filteredHumidityData} />
+            <HumidityArea data={humidityData} />
           </CardContent>
           <CardFooter>
             <div className="flex w-full items-center gap-2 text-sm">
@@ -236,27 +298,58 @@ export default function GraphMonitoring() {
           </CardFooter>
         </Card>
 
-        {/* Combined Card */}
         <Card className="flex flex-col h-full">
           <CardHeader>
             <div>
-              <CardTitle>Temperature & Humidity</CardTitle>
-              <CardDescription>DHT11</CardDescription>
+              <CardTitle>Light Intensity</CardTitle>
+              <CardDescription>LDR Sensor</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="flex-1">
-            <CombinedArea
-              data={filteredTempData.map((d, i) => ({
-                time: d.time,
-                temp: d.temp,
-                hum: filteredHumidityData[i]?.hum,
-              }))}
-            />
+            <LightArea data={lightData} />
           </CardContent>
           <CardFooter>
-            <div className="flex w-full items-center justify-between gap-2 text-sm">
+            <div className="flex w-full items-center gap-2 text-sm">
               <div className="flex-1 text-sm text-muted-foreground">
-                Last reading at {latestTemp?.time ?? "-"}
+                Last reading at {latestLight?.time ?? "-"}
+              </div>
+            </div>
+          </CardFooter>
+        </Card>
+
+        <Card className="flex flex-col h-full">
+          <CardHeader>
+            <div>
+              <CardTitle>Rain Status</CardTitle>
+              <CardDescription>Raindrop Sensor</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="flex-1">
+            <RainArea data={rainData} />
+          </CardContent>
+          <CardFooter>
+            <div className="flex w-full items-center gap-2 text-sm">
+              <div className="flex-1 text-sm text-muted-foreground">
+                Last reading at {latestRain?.time ?? "-"}
+              </div>
+            </div>
+          </CardFooter>
+        </Card>
+
+        <Card className="flex flex-col h-full">
+          <CardHeader>
+            <div>
+              <CardTitle>Canopy Status</CardTitle>
+              <CardDescription>Servo Motor</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="flex-1">
+            <ServoArea data={servoData} />
+          </CardContent>
+          <CardFooter>
+            <div className="flex w-full items-center gap-2 text-sm">
+              <div className="flex-1 text-sm text-muted-foreground">
+                Last reading at {latestServo?.time ?? "-"}
               </div>
             </div>
           </CardFooter>

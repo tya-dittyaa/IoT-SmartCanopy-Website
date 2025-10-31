@@ -3,10 +3,11 @@ import {
   Home,
   Radio,
   RefreshCw,
+  Table as TableIcon,
   TrendingUp,
   Zap,
 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 
 import DeviceSelector from "@/components/dashboard/device-selector";
@@ -28,53 +29,71 @@ import { useDevice } from "@/contexts/device-context";
 const menuItems = [
   { title: "Home", url: "/dashboard", icon: Home },
   { title: "Live Data", url: "/dashboard/live", icon: Activity },
+  { title: "Table Data", url: "/dashboard/table", icon: TableIcon },
   { title: "Graph Data", url: "/dashboard/graphs", icon: TrendingUp },
   { title: "Device Control", url: "/dashboard/control", icon: Zap },
 ];
+
+interface RefreshButtonProps {
+  refreshDevices?: () => Promise<void>;
+  isDisabled?: boolean;
+}
+
+const RefreshButton = React.memo(function RefreshButton({
+  refreshDevices,
+  isDisabled,
+}: RefreshButtonProps) {
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    if (isDisabled || !refreshDevices || refreshing) return;
+    try {
+      setRefreshing(true);
+      await refreshDevices();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [isDisabled, refreshDevices, refreshing]);
+
+  const disabled = isDisabled || refreshing;
+
+  return (
+    <button
+      onClick={onRefresh}
+      title="Refresh devices"
+      disabled={disabled}
+      className={`w-full inline-flex items-center justify-center rounded-md px-2 text-sm font-medium h-10 ${
+        disabled
+          ? "bg-gray-400 text-white cursor-not-allowed"
+          : "bg-slate-600 text-white hover:bg-slate-700"
+      }`}
+    >
+      <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+    </button>
+  );
+});
 
 export function IoTDashboardSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
   const {
     selectedDeviceId,
-    availableDevices,
     connectToDevice,
     disconnectFromDevice,
     refreshDevices,
-    wsStatus,
+    mqttStatus,
+    selectedDevice,
   } = useDevice();
-  const selectedDevice = selectedDeviceId
-    ? availableDevices.find((d) => d.deviceId === selectedDeviceId)
-    : undefined;
-  const selectedDeviceStatus = selectedDevice;
 
-  function RefreshButton({
-    refreshDevices,
-  }: {
-    refreshDevices?: () => Promise<void>;
-  }) {
-    const [refreshing, setRefreshing] = useState(false);
+  const handleConnect = useCallback(() => {
+    if (selectedDeviceId) {
+      connectToDevice();
+    }
+  }, [connectToDevice, selectedDeviceId]);
 
-    const onRefresh = async () => {
-      if (!refreshDevices) return;
-      try {
-        setRefreshing(true);
-        await refreshDevices();
-      } finally {
-        setRefreshing(false);
-      }
-    };
-
-    return (
-      <button
-        onClick={onRefresh}
-        title="Refresh devices"
-        className={`w-full inline-flex items-center justify-center rounded-md px-2 text-sm font-medium text-white h-10 bg-slate-600`}
-      >
-        <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-      </button>
-    );
-  }
+  const handleDisconnect = useCallback(() => {
+    disconnectFromDevice();
+  }, [disconnectFromDevice]);
 
   return (
     <Sidebar variant="inset" {...props}>
@@ -92,7 +111,7 @@ export function IoTDashboardSidebar({
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="sidebar-scrollbar">
         <SidebarGroup>
           <SidebarGroupLabel>Device</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -100,29 +119,32 @@ export function IoTDashboardSidebar({
 
             <div className="mt-3 flex gap-2">
               <div className="flex-[3]">
-                {!selectedDeviceStatus?.isConnected ? (
+                {!selectedDevice?.isConnected ? (
                   <button
-                    onClick={() => connectToDevice()}
+                    onClick={handleConnect}
                     disabled={!selectedDeviceId}
                     className={`w-full inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-white h-10 ${
                       !selectedDeviceId
                         ? "bg-gray-400 cursor-not-allowed"
-                        : "bg-green-600"
+                        : "bg-green-600 hover:bg-green-700"
                     }`}
                   >
                     Connect
                   </button>
                 ) : (
                   <button
-                    onClick={() => disconnectFromDevice()}
-                    className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-rose-600 px-3 py-2 text-sm font-medium text-white h-10"
+                    onClick={handleDisconnect}
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-rose-600 px-3 py-2 text-sm font-medium text-white h-10 hover:bg-rose-700"
                   >
                     Disconnect
                   </button>
                 )}
               </div>
               <div className="flex-1">
-                <RefreshButton refreshDevices={refreshDevices} />
+                <RefreshButton
+                  refreshDevices={refreshDevices}
+                  isDisabled={selectedDevice?.isConnected}
+                />
               </div>
             </div>
           </SidebarGroupContent>
@@ -134,9 +156,9 @@ export function IoTDashboardSidebar({
             <div className="space-y-2">
               <div
                 className={`flex flex-col gap-1 px-2 py-2 rounded-md ${
-                  wsStatus.isConnected
+                  mqttStatus.isConnected
                     ? "bg-green-500/10"
-                    : wsStatus.isConnecting
+                    : mqttStatus.isConnecting
                     ? "bg-yellow-500/10"
                     : "bg-red-500/10"
                 }`}
@@ -144,26 +166,26 @@ export function IoTDashboardSidebar({
                 <div className="flex items-center gap-2">
                   <Radio
                     className={`h-4 w-4 ${
-                      wsStatus.isConnected
+                      mqttStatus.isConnected
                         ? "text-green-500"
-                        : wsStatus.isConnecting
+                        : mqttStatus.isConnecting
                         ? "text-yellow-500"
                         : "text-red-500"
                     }`}
                   />
-                  <span className="text-sm">WebSocket Connection</span>
+                  <span className="text-sm">MQTT Connection</span>
                 </div>
-                {wsStatus.isConnected && wsStatus.lastConnected ? (
+                {mqttStatus.isConnected && mqttStatus.lastConnected ? (
                   <div className="text-[11px] text-muted-foreground ml-6">
                     Last connected:{" "}
-                    {new Date(wsStatus.lastConnected).toLocaleString()}
+                    {new Date(mqttStatus.lastConnected).toLocaleString()}
                   </div>
                 ) : null}
               </div>
 
               <div
                 className={`flex flex-col gap-1 px-2 py-2 rounded-md ${
-                  selectedDeviceStatus?.isConnected
+                  selectedDevice?.isConnected
                     ? "bg-green-500/10"
                     : "bg-red-500/10"
                 }`}
@@ -171,18 +193,17 @@ export function IoTDashboardSidebar({
                 <div className="flex items-center gap-2">
                   <Radio
                     className={`h-4 w-4 ${
-                      selectedDeviceStatus?.isConnected
+                      selectedDevice?.isConnected
                         ? "text-green-500"
                         : "text-red-500"
                     }`}
                   />
                   <span className="text-sm">Device Connection</span>
                 </div>
-                {selectedDeviceStatus?.isConnected &&
-                selectedDeviceStatus.lastSeen ? (
+                {selectedDevice?.isConnected && selectedDevice.lastSeen ? (
                   <div className="text-[11px] text-muted-foreground ml-6">
                     Last seen:{" "}
-                    {new Date(selectedDeviceStatus.lastSeen).toLocaleString()}
+                    {new Date(selectedDevice.lastSeen).toLocaleString()}
                   </div>
                 ) : null}
               </div>

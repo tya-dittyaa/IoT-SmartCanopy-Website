@@ -1,17 +1,40 @@
 import { HumidityRadial } from "@/components/charts/humidity-radial";
+import { LightRadial } from "@/components/charts/light-radial";
 import { TemperatureRadial } from "@/components/charts/temperature-radial";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useDevice } from "@/contexts/device-context";
 import { AlertCircle } from "lucide-react";
+import { useMemo } from "react";
 
 export default function LiveMonitoring() {
-  const { wsStatus, telemetryData } = useDevice();
-  const connected = wsStatus.isConnected;
-  const telemetry = telemetryData;
+  const { mqttStatus, telemetryData, selectedDevice } = useDevice();
+  const { temperature, humidity, rainStatus, servoStatus, lightIntensity } =
+    telemetryData;
 
-  const getRainStatusIcon = () => {
-    switch (telemetry.rainStatus) {
+  const connected = useMemo(() => {
+    const isMqttConnected = mqttStatus?.isConnected ?? false;
+    const isDeviceConnected = selectedDevice?.isConnected ?? false;
+    return isMqttConnected && isDeviceConnected;
+  }, [mqttStatus, selectedDevice]);
+
+  const tempValue = useMemo(
+    () => (connected ? temperature : null),
+    [connected, temperature]
+  );
+  const humValue = useMemo(
+    () => (connected ? humidity : null),
+    [connected, humidity]
+  );
+
+  const lightValue = useMemo(
+    () => (connected ? lightIntensity : null),
+    [connected, lightIntensity]
+  );
+
+  const rainStatusIcon = useMemo(() => {
+    const status = rainStatus ?? "unknown";
+    switch (status) {
       case "rain":
         return "🌧️";
       case "dry":
@@ -19,10 +42,16 @@ export default function LiveMonitoring() {
       default:
         return "❓";
     }
-  };
+  }, [rainStatus]);
 
-  const getServoStatusIcon = () => {
-    switch (telemetry.servoStatus) {
+  const rainStatusText = useMemo(
+    () => (connected ? rainStatus?.toUpperCase() : "UNKNOWN"),
+    [connected, rainStatus]
+  );
+
+  const servoStatusIcon = useMemo(() => {
+    const status = servoStatus ?? "unknown";
+    switch (status) {
       case "open":
         return "🔓";
       case "closed":
@@ -30,11 +59,15 @@ export default function LiveMonitoring() {
       default:
         return "❓";
     }
-  };
+  }, [servoStatus]);
+
+  const servoStatusText = useMemo(
+    () => (connected ? servoStatus?.toUpperCase() : "UNKNOWN"),
+    [connected, servoStatus]
+  );
 
   return (
     <div className="space-y-6">
-      {/* Connection Alert */}
       {!connected && (
         <Alert className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950/50">
           <AlertCircle className="h-4 w-4 text-yellow-600" />
@@ -53,7 +86,6 @@ export default function LiveMonitoring() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 auto-rows-fr">
-        {/* Temperature */}
         <Card className="flex flex-col h-full">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">Temperature</CardTitle>
@@ -61,9 +93,7 @@ export default function LiveMonitoring() {
           <CardContent className="flex-1">
             <div className="flex flex-col h-full">
               <div className="flex-1 flex items-center justify-center">
-                <TemperatureRadial
-                  value={connected ? telemetry.temperature : 0}
-                />
+                <TemperatureRadial value={tempValue} />
               </div>
               <div className="text-center pb-2">
                 <div className="text-xs text-muted-foreground">DHT11</div>
@@ -72,7 +102,6 @@ export default function LiveMonitoring() {
           </CardContent>
         </Card>
 
-        {/* Humidity */}
         <Card className="flex flex-col h-full">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">Humidity</CardTitle>
@@ -80,7 +109,7 @@ export default function LiveMonitoring() {
           <CardContent className="flex-1">
             <div className="flex flex-col h-full">
               <div className="flex-1 flex items-center justify-center">
-                <HumidityRadial value={connected ? telemetry.humidity : 0} />
+                <HumidityRadial value={humValue} />
               </div>
               <div className="text-center pb-2">
                 <div className="text-xs text-muted-foreground">DHT11</div>
@@ -89,18 +118,16 @@ export default function LiveMonitoring() {
           </CardContent>
         </Card>
 
-        {/* Rain Status */}
         <Card className="flex flex-col h-full">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Rain Status</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Light Intensity
+            </CardTitle>
           </CardHeader>
           <CardContent className="flex-1">
             <div className="flex flex-col h-full">
-              <div className="flex-1 flex flex-col items-center justify-center">
-                <div className="text-8xl mb-4">{getRainStatusIcon()}</div>
-                <div className="text-xl font-bold">
-                  {connected ? telemetry.rainStatus : "Unknown"}
-                </div>
+              <div className="flex-1 flex items-center justify-center">
+                <LightRadial value={lightValue} />
               </div>
               <div className="text-center pb-2">
                 <div className="text-xs text-muted-foreground">LDR Sensor</div>
@@ -109,7 +136,25 @@ export default function LiveMonitoring() {
           </CardContent>
         </Card>
 
-        {/* Canopy Status */}
+        <Card className="flex flex-col h-full">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Rain Status</CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1">
+            <div className="flex flex-col h-full">
+              <div className="flex-1 flex flex-col items-center justify-center">
+                <div className="text-8xl mb-4">{rainStatusIcon}</div>
+                <div className="text-xl font-bold">{rainStatusText}</div>
+              </div>
+              <div className="text-center pb-2">
+                <div className="text-xs text-muted-foreground">
+                  Raindrop Sensor
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card className="flex flex-col h-full">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">Canopy Status</CardTitle>
@@ -117,13 +162,11 @@ export default function LiveMonitoring() {
           <CardContent className="flex-1">
             <div className="flex flex-col h-full">
               <div className="flex-1 flex flex-col items-center justify-center">
-                <div className="text-8xl mb-4">{getServoStatusIcon()}</div>
-                <div className="text-xl font-bold">
-                  {connected ? telemetry.servoStatus : "Unknown"}
-                </div>
+                <div className="text-8xl mb-4">{servoStatusIcon}</div>
+                <div className="text-xl font-bold">{servoStatusText}</div>
               </div>
               <div className="text-center pb-2">
-                <div className="text-xs text-muted-foreground">Servo</div>
+                <div className="text-xs text-muted-foreground">Servo Motor</div>
               </div>
             </div>
           </CardContent>

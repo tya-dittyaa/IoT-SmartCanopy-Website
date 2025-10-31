@@ -4,4 +4,10 @@ services:
     container_name: smartcanopy-website
     restart: always
     ports:
-      - "29925:80"   # host:container
+      - "29925:80"
+    networks:
+      - cf-net
+
+networks:
+  cf-net:
+    external: true

@@ -9,18 +9,18 @@ import {
 import React from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
-interface HumidityAreaProps {
-  data: Array<{ time: string; hum: number }>;
+interface ServoAreaProps {
+  data: Array<{ time: string; servo: number }>;
 }
 
 const chartConfig = {
-  hum: { label: "Humidity (%)", color: "#3b82f6" },
+  servo: { label: "Servo (1 = OPEN)", color: "#8b5cf6" },
 } satisfies ChartConfig;
 
-export const HumidityArea: React.FC<HumidityAreaProps> = ({ data }) => {
+export const ServoArea: React.FC<ServoAreaProps> = ({ data }) => {
   return (
     <div className="w-full h-full">
-      <ChartContainer config={{ hum: chartConfig.hum }}>
+      <ChartContainer config={{ servo: chartConfig.servo }}>
         <AreaChart data={data} margin={{ left: 12, right: 12 }}>
           <CartesianGrid vertical={false} />
           <XAxis
@@ -29,7 +29,7 @@ export const HumidityArea: React.FC<HumidityAreaProps> = ({ data }) => {
             axisLine={false}
             tickMargin={8}
           />
-          <YAxis yAxisId="left" domain={[0, 100]} allowDecimals={false} />
+          <YAxis yAxisId="left" domain={[0, 1]} allowDecimals={false} />
           <ChartTooltip
             cursor={false}
             content={<ChartTooltipContent indicator="line" />}
@@ -37,12 +37,12 @@ export const HumidityArea: React.FC<HumidityAreaProps> = ({ data }) => {
           <ChartLegend content={<ChartLegendContent />} />
           <Area
             yAxisId="left"
-            dataKey="hum"
-            name="(%)"
-            type="natural"
-            fill="var(--color-hum)"
+            dataKey="servo"
+            name="(1 = OPEN)"
+            type="basis"
+            fill="var(--color-servo, #8b5cf6)"
             fillOpacity={0.4}
-            stroke="var(--color-hum)"
+            stroke="var(--color-servo, #8b5cf6)"
           />
         </AreaChart>
       </ChartContainer>
@@ -50,4 +50,4 @@ export const HumidityArea: React.FC<HumidityAreaProps> = ({ data }) => {
   );
 };
 
-export default HumidityArea;
+export default ServoArea;
