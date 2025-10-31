@@ -14,7 +14,7 @@ interface RainAreaProps {
 }
 
 const chartConfig = {
-  rain: { label: "Rain (1 = RAIN)", color: "#0ea5a4" },
+  rain: { label: "Rain (1 = RAIN)", color: "#10b981" },
 } satisfies ChartConfig;
 
 export const RainArea: React.FC<RainAreaProps> = ({ data }) => {
@@ -40,9 +40,9 @@ export const RainArea: React.FC<RainAreaProps> = ({ data }) => {
             dataKey="rain"
             name="(1 = RAIN)"
             type="basis"
-            fill="var(--color-rain)"
+            fill="var(--color-rain, #10b981)"
             fillOpacity={0.4}
-            stroke="var(--color-rain)"
+            stroke="var(--color-rain, #10b981)"
           />
         </AreaChart>
       </ChartContainer>

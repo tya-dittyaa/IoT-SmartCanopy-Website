@@ -9,18 +9,18 @@ import {
 import React from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
-interface ServoAreaProps {
-  data: Array<{ time: string; servo: number }>;
+interface LightAreaProps {
+  data: Array<{ time: string; light: number }>;
 }
 
 const chartConfig = {
-  servo: { label: "Servo (1 = OPEN)", color: "#8b5cf6" },
+  light: { label: "Light Intensity", color: "#f59e0b" },
 } satisfies ChartConfig;
 
-export const ServoArea: React.FC<ServoAreaProps> = ({ data }) => {
+export const LightArea: React.FC<LightAreaProps> = ({ data }) => {
   return (
     <div className="w-full h-full">
-      <ChartContainer config={{ servo: chartConfig.servo }}>
+      <ChartContainer config={{ light: chartConfig.light }}>
         <AreaChart data={data} margin={{ left: 12, right: 12 }}>
           <CartesianGrid vertical={false} />
           <XAxis
@@ -29,7 +29,7 @@ export const ServoArea: React.FC<ServoAreaProps> = ({ data }) => {
             axisLine={false}
             tickMargin={8}
           />
-          <YAxis yAxisId="left" domain={[0, 1]} allowDecimals={false} />
+          <YAxis yAxisId="left" allowDecimals={false} />
           <ChartTooltip
             cursor={false}
             content={<ChartTooltipContent indicator="line" />}
@@ -37,12 +37,12 @@ export const ServoArea: React.FC<ServoAreaProps> = ({ data }) => {
           <ChartLegend content={<ChartLegendContent />} />
           <Area
             yAxisId="left"
-            dataKey="servo"
-            name="(1 = OPEN)"
+            dataKey="light"
+            name="Light"
             type="basis"
-            fill="var(--color-servo, #8b5cf6)"
+            fill="var(--color-light, #f59e0b)"
             fillOpacity={0.4}
-            stroke="var(--color-servo, #8b5cf6)"
+            stroke="var(--color-light, #f59e0b)"
           />
         </AreaChart>
       </ChartContainer>
@@ -50,4 +50,4 @@ export const ServoArea: React.FC<ServoAreaProps> = ({ data }) => {
   );
 };
 
-export default ServoArea;
+export default LightArea;

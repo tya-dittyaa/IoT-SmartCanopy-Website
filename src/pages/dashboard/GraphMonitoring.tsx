@@ -18,11 +18,13 @@ export const description = "Graph monitoring for Temperature and Humidity";
 
 import {
   fetchHumidityTelemetry,
+  fetchLightTelemetry,
   fetchRainTelemetry,
   fetchServoTelemetry,
   fetchTemperatureTelemetry,
 } from "@/api/telemetries";
 import HumidityArea from "@/components/charts/humidity-area";
+import LightArea from "@/components/charts/light-area";
 import RainArea from "@/components/charts/rain-area";
 import ServoArea from "@/components/charts/servo-area";
 import TemperatureArea from "@/components/charts/temperature-area";
@@ -32,6 +34,7 @@ import type { TelemetryDto } from "@/types/telemetry";
 
 const tempDataInit: Array<{ time: string; temp: number }> = [];
 const humidityDataInit: Array<{ time: string; hum: number }> = [];
+const lightDataInit: Array<{ time: string; light: number }> = [];
 const REFRESH_INTERVAL = 30; // seconds (fixed)
 const ranges = RANGES;
 
@@ -47,6 +50,8 @@ export default function GraphMonitoring() {
   const [servoData, setServoData] = useState<
     Array<{ time: string; servo: number }>
   >([]);
+  const [lightData, setLightData] =
+    useState<Array<{ time: string; light: number }>>(lightDataInit);
   const [nextRefresh, setNextRefresh] = useState<number>(REFRESH_INTERVAL);
 
   const { selectedDeviceId, mqttStatus, selectedDevice } = useDevice();
@@ -84,6 +89,10 @@ export default function GraphMonitoring() {
     () => (servoData.length > 0 ? servoData[servoData.length - 1] : undefined),
     [servoData]
   );
+  const latestLight = useMemo(
+    () => (lightData.length > 0 ? lightData[lightData.length - 1] : undefined),
+    [lightData]
+  );
 
   const fetchTelemetry = useCallback(async () => {
     let mounted = true;
@@ -99,11 +108,12 @@ export default function GraphMonitoring() {
       const minutes = RANGE_TO_MINUTES[selectedRange] ?? 1000;
       const deviceKey = selectedDeviceId;
 
-      const [tempArr, humArr, rainArr, servoArr] = await Promise.all([
+      const [tempArr, humArr, rainArr, servoArr, lightArr] = await Promise.all([
         fetchTemperatureTelemetry(deviceKey, minutes),
         fetchHumidityTelemetry(deviceKey, minutes),
         fetchRainTelemetry(deviceKey, minutes),
         fetchServoTelemetry(deviceKey, minutes),
+        fetchLightTelemetry(deviceKey, minutes),
       ]);
 
       if (!mounted) return;
@@ -124,11 +134,16 @@ export default function GraphMonitoring() {
         time: s.time ? new Date(s.time).toLocaleString() : s.time,
         servo: s.value,
       }));
+      const lights = (lightArr || []).map((l: TelemetryDto) => ({
+        time: l.time ? new Date(l.time).toLocaleString() : l.time,
+        light: l.value,
+      }));
 
       setTempData(temps);
       setHumidityData(hums);
       setRainData(rains);
       setServoData(servos);
+      setLightData(lights);
     } catch {
       // swallow error
     }
@@ -278,6 +293,25 @@ export default function GraphMonitoring() {
             <div className="flex w-full items-center gap-2 text-sm">
               <div className="flex-1 text-sm text-muted-foreground">
                 Last reading at {latestHum?.time ?? "-"}
+              </div>
+            </div>
+          </CardFooter>
+        </Card>
+
+        <Card className="flex flex-col h-full">
+          <CardHeader>
+            <div>
+              <CardTitle>Light Intensity</CardTitle>
+              <CardDescription>LDR Sensor</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="flex-1">
+            <LightArea data={lightData} />
+          </CardContent>
+          <CardFooter>
+            <div className="flex w-full items-center gap-2 text-sm">
+              <div className="flex-1 text-sm text-muted-foreground">
+                Last reading at {latestLight?.time ?? "-"}
               </div>
             </div>
           </CardFooter>
