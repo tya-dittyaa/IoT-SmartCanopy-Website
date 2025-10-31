@@ -286,7 +286,7 @@ export default function GraphMonitoring() {
         <Card className="flex flex-col h-full">
           <CardHeader>
             <div>
-              <CardTitle>Rain</CardTitle>
+              <CardTitle>Rain Status</CardTitle>
               <CardDescription>Raindrop Sensor</CardDescription>
             </div>
           </CardHeader>
@@ -305,7 +305,7 @@ export default function GraphMonitoring() {
         <Card className="flex flex-col h-full">
           <CardHeader>
             <div>
-              <CardTitle>Canopy</CardTitle>
+              <CardTitle>Canopy Status</CardTitle>
               <CardDescription>Servo Motor</CardDescription>
             </div>
           </CardHeader>
