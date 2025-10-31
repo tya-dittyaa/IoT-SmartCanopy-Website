@@ -250,7 +250,7 @@ export default function TableData() {
                   <TableHead>Humidity</TableHead>
                   <TableHead>Light Intensity</TableHead>
                   <TableHead>Rain Status</TableHead>
-                  <TableHead>Servo Status</TableHead>
+                  <TableHead>Canopy Status</TableHead>
                 </tr>
               </TableHeader>
               <TableBody>

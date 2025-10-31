@@ -12,7 +12,8 @@ interface LightRadialProps {
 }
 
 export const LightRadial: React.FC<LightRadialProps> = ({ value }) => {
-  const percent = value !== null ? Math.round((value / 4095) * 100) : 0;
+  const percent =
+    value !== null ? Math.min(100, Math.max(0, Math.round(value))) : 0;
   const chartData = [{ light: percent ?? 0, max: 100 }];
 
   const chartConfig = {
