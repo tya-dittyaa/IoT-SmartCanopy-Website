@@ -99,6 +99,9 @@ export default function GraphMonitoring() {
     if (!selectedDeviceId || !canFetch) {
       setTempData([]);
       setHumidityData([]);
+      setRainData([]);
+      setServoData([]);
+      setLightData([]);
       return () => {
         mounted = false;
       };
@@ -157,6 +160,9 @@ export default function GraphMonitoring() {
     if (!canFetch) {
       setTempData([]);
       setHumidityData([]);
+      setRainData([]);
+      setServoData([]);
+      setLightData([]);
       setNextRefresh(REFRESH_INTERVAL);
       return;
     }
