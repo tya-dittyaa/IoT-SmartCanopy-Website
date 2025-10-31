@@ -1,4 +1,5 @@
 import { HumidityRadial } from "@/components/charts/humidity-radial";
+import { LightRadial } from "@/components/charts/light-radial";
 import { TemperatureRadial } from "@/components/charts/temperature-radial";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +9,8 @@ import { useMemo } from "react";
 
 export default function LiveMonitoring() {
   const { mqttStatus, telemetryData, selectedDevice } = useDevice();
-  const { temperature, humidity, rainStatus, servoStatus } = telemetryData;
+  const { temperature, humidity, rainStatus, servoStatus, lightIntensity } =
+    telemetryData;
 
   const connected = useMemo(() => {
     const isMqttConnected = mqttStatus?.isConnected ?? false;
@@ -23,6 +25,11 @@ export default function LiveMonitoring() {
   const humValue = useMemo(
     () => (connected ? humidity : null),
     [connected, humidity]
+  );
+
+  const lightValue = useMemo(
+    () => (connected ? lightIntensity : null),
+    [connected, lightIntensity]
   );
 
   const rainStatusIcon = useMemo(() => {
@@ -106,6 +113,24 @@ export default function LiveMonitoring() {
               </div>
               <div className="text-center pb-2">
                 <div className="text-xs text-muted-foreground">DHT11</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="flex flex-col h-full">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">
+              Light Intensity
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1">
+            <div className="flex flex-col h-full">
+              <div className="flex-1 flex items-center justify-center">
+                <LightRadial value={lightValue} />
+              </div>
+              <div className="text-center pb-2">
+                <div className="text-xs text-muted-foreground">LDR Sensor</div>
               </div>
             </div>
           </CardContent>

@@ -27,6 +27,7 @@ function disconnectMqtt(c?: MqttClient | null) {
 export interface TelemetryData {
   temperature: number | null;
   humidity: number | null;
+  lightIntensity: number | null;
   rainStatus: string;
   servoStatus: string;
   mode: "auto" | "manual" | "unknown";
@@ -35,6 +36,7 @@ export interface TelemetryData {
 export interface ISensorTelemetry {
   humidity: number;
   temperature: number;
+  lightIntensity: number;
   rainStatus: "DRY" | "RAIN";
   servoStatus: "OPEN" | "CLOSED";
   mode: "AUTO" | "MANUAL";
@@ -77,6 +79,7 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
   const [telemetryData, setTelemetryData] = useState<TelemetryData>({
     temperature: null,
     humidity: null,
+    lightIntensity: null,
     rainStatus: "unknown",
     servoStatus: "unknown",
     mode: "unknown",
@@ -88,6 +91,7 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
     setTelemetryData({
       temperature: null,
       humidity: null,
+      lightIntensity: null,
       rainStatus: "unknown",
       servoStatus: "unknown",
       mode: "unknown",
@@ -295,6 +299,9 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
             }),
             ...(sensorData.humidity !== undefined && {
               humidity: Number(sensorData.humidity),
+            }),
+            ...(sensorData.lightIntensity !== undefined && {
+              lightIntensity: Number(sensorData.lightIntensity),
             }),
             ...(sensorData.rainStatus !== undefined && {
               rainStatus: sensorData.rainStatus === "RAIN" ? "rain" : "dry",
