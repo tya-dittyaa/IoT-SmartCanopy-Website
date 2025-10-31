@@ -3,6 +3,7 @@ import {
   Home,
   Radio,
   RefreshCw,
+  Table as TableIcon,
   TrendingUp,
   Zap,
 } from "lucide-react";
@@ -28,6 +29,7 @@ import { useDevice } from "@/contexts/device-context";
 const menuItems = [
   { title: "Home", url: "/dashboard", icon: Home },
   { title: "Live Data", url: "/dashboard/live", icon: Activity },
+  { title: "Table Data", url: "/dashboard/table", icon: TableIcon },
   { title: "Graph Data", url: "/dashboard/graphs", icon: TrendingUp },
   { title: "Device Control", url: "/dashboard/control", icon: Zap },
 ];
@@ -109,7 +111,7 @@ export function IoTDashboardSidebar({
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="sidebar-scrollbar">
         <SidebarGroup>
           <SidebarGroupLabel>Device</SidebarGroupLabel>
           <SidebarGroupContent>

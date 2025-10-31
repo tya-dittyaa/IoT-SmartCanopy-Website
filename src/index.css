@@ -114,7 +114,48 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Sidebar custom scrollbar (WebKit + Firefox) */
+@layer components {
+  .sidebar-scrollbar {
+    /* Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+  }
+
+  /* WebKit browsers */
+  .sidebar-scrollbar::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 9999px;
+    margin: 8px 0;
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(148, 163, 184, 0.18);
+    /* light thumb */
+    border-radius: 9999px;
+    border: 3px solid transparent;
+    /* creates padding around thumb */
+    background-clip: content-box;
+    transition: background-color 120ms ease;
+  }
+
+  /* Stronger thumb on hover to improve discoverability */
+  .sidebar-scrollbar:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(148, 163, 184, 0.42);
+  }
+
+  /* Dark theme tweak */
+  .dark .sidebar-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(148, 163, 184, 0.28);
   }
 }

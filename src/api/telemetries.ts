@@ -41,3 +41,27 @@ export async function fetchServoTelemetry(deviceKey: string, minutes = 1000) {
   });
   return res.data ?? [];
 }
+
+export async function fetchAllTelemetries(deviceKey: string, minutes = 1000) {
+  const res = await axios.get<{
+    temperature: TelemetryDto[];
+    humidity: TelemetryDto[];
+    light: TelemetryDto[];
+    rain: TelemetryDto[];
+    servo: TelemetryDto[];
+    mode: TelemetryDto[];
+  }>("/telemetries/all", {
+    params: { deviceKey, minutes },
+  });
+
+  return (
+    res.data ?? {
+      temperature: [],
+      humidity: [],
+      light: [],
+      rain: [],
+      servo: [],
+      mode: [],
+    }
+  );
+}
