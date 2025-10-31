@@ -5,9 +5,3 @@ services:
     restart: always
     ports:
       - "29925:80"
-    networks:
-      - cf-net
-
-networks:
-  cf-net:
-    external: true
