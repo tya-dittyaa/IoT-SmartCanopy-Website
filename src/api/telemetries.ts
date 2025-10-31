@@ -20,3 +20,17 @@ export async function fetchHumidityTelemetry(
   });
   return res.data ?? [];
 }
+
+export async function fetchRainTelemetry(deviceKey: string, minutes = 1000) {
+  const res = await axios.get<TelemetryDto[]>("/telemetries/rain", {
+    params: { deviceKey, minutes },
+  });
+  return res.data ?? [];
+}
+
+export async function fetchServoTelemetry(deviceKey: string, minutes = 1000) {
+  const res = await axios.get<TelemetryDto[]>("/telemetries/servo", {
+    params: { deviceKey, minutes },
+  });
+  return res.data ?? [];
+}

@@ -139,7 +139,7 @@ export default function LiveMonitoring() {
                 <div className="text-xl font-bold">{servoStatusText}</div>
               </div>
               <div className="text-center pb-2">
-                <div className="text-xs text-muted-foreground">Servo</div>
+                <div className="text-xs text-muted-foreground">Servo Motor</div>
               </div>
             </div>
           </CardContent>

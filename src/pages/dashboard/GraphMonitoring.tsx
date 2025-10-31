@@ -18,10 +18,13 @@ export const description = "Graph monitoring for Temperature and Humidity";
 
 import {
   fetchHumidityTelemetry,
+  fetchRainTelemetry,
+  fetchServoTelemetry,
   fetchTemperatureTelemetry,
 } from "@/api/telemetries";
-import CombinedArea from "@/components/charts/combined-area";
 import HumidityArea from "@/components/charts/humidity-area";
+import RainArea from "@/components/charts/rain-area";
+import ServoArea from "@/components/charts/servo-area";
 import TemperatureArea from "@/components/charts/temperature-area";
 import { useDevice } from "@/contexts/device-context";
 import RANGES, { RANGE_TO_MINUTES, type Range } from "@/types/range";
@@ -38,6 +41,12 @@ export default function GraphMonitoring() {
     useState<Array<{ time: string; temp: number }>>(tempDataInit);
   const [humidityData, setHumidityData] =
     useState<Array<{ time: string; hum: number }>>(humidityDataInit);
+  const [rainData, setRainData] = useState<
+    Array<{ time: string; rain: number }>
+  >([]);
+  const [servoData, setServoData] = useState<
+    Array<{ time: string; servo: number }>
+  >([]);
   const [nextRefresh, setNextRefresh] = useState<number>(REFRESH_INTERVAL);
 
   const { selectedDeviceId, mqttStatus, selectedDevice } = useDevice();
@@ -67,6 +76,14 @@ export default function GraphMonitoring() {
         : undefined,
     [humidityData]
   );
+  const latestRain = useMemo(
+    () => (rainData.length > 0 ? rainData[rainData.length - 1] : undefined),
+    [rainData]
+  );
+  const latestServo = useMemo(
+    () => (servoData.length > 0 ? servoData[servoData.length - 1] : undefined),
+    [servoData]
+  );
 
   const fetchTelemetry = useCallback(async () => {
     let mounted = true;
@@ -82,9 +99,11 @@ export default function GraphMonitoring() {
       const minutes = RANGE_TO_MINUTES[selectedRange] ?? 1000;
       const deviceKey = selectedDeviceId;
 
-      const [tempArr, humArr] = await Promise.all([
+      const [tempArr, humArr, rainArr, servoArr] = await Promise.all([
         fetchTemperatureTelemetry(deviceKey, minutes),
         fetchHumidityTelemetry(deviceKey, minutes),
+        fetchRainTelemetry(deviceKey, minutes),
+        fetchServoTelemetry(deviceKey, minutes),
       ]);
 
       if (!mounted) return;
@@ -97,9 +116,19 @@ export default function GraphMonitoring() {
         time: h.time ? new Date(h.time).toLocaleString() : h.time,
         hum: h.value,
       }));
+      const rains = (rainArr || []).map((r: TelemetryDto) => ({
+        time: r.time ? new Date(r.time).toLocaleString() : r.time,
+        rain: r.value,
+      }));
+      const servos = (servoArr || []).map((s: TelemetryDto) => ({
+        time: s.time ? new Date(s.time).toLocaleString() : s.time,
+        servo: s.value,
+      }));
 
       setTempData(temps);
       setHumidityData(hums);
+      setRainData(rains);
+      setServoData(servos);
     } catch {
       // swallow error
     }
@@ -147,14 +176,6 @@ export default function GraphMonitoring() {
     void fetchTelemetry();
     setNextRefresh(REFRESH_INTERVAL);
   }, [selectedDeviceId, canFetch, fetchTelemetry]);
-
-  const combinedData = useMemo(() => {
-    return tempData.map((d, i) => ({
-      time: d.time,
-      temp: d.temp,
-      hum: humidityData[i]?.hum,
-    }));
-  }, [tempData, humidityData]);
 
   return (
     <div className="space-y-6">
@@ -265,17 +286,36 @@ export default function GraphMonitoring() {
         <Card className="flex flex-col h-full">
           <CardHeader>
             <div>
-              <CardTitle>Temperature & Humidity</CardTitle>
-              <CardDescription>DHT11</CardDescription>
+              <CardTitle>Rain</CardTitle>
+              <CardDescription>LDR Sensor</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="flex-1">
-            <CombinedArea data={combinedData} />
+            <RainArea data={rainData} />
           </CardContent>
           <CardFooter>
-            <div className="flex w-full items-center justify-between gap-2 text-sm">
+            <div className="flex w-full items-center gap-2 text-sm">
               <div className="flex-1 text-sm text-muted-foreground">
-                Last reading at {latestTemp?.time ?? "-"}
+                Last reading at {latestRain?.time ?? "-"}
+              </div>
+            </div>
+          </CardFooter>
+        </Card>
+
+        <Card className="flex flex-col h-full">
+          <CardHeader>
+            <div>
+              <CardTitle>Canopy</CardTitle>
+              <CardDescription>Servo Motor</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="flex-1">
+            <ServoArea data={servoData} />
+          </CardContent>
+          <CardFooter>
+            <div className="flex w-full items-center gap-2 text-sm">
+              <div className="flex-1 text-sm text-muted-foreground">
+                Last reading at {latestServo?.time ?? "-"}
               </div>
             </div>
           </CardFooter>
