@@ -287,7 +287,7 @@ export default function GraphMonitoring() {
           <CardHeader>
             <div>
               <CardTitle>Rain</CardTitle>
-              <CardDescription>LDR Sensor</CardDescription>
+              <CardDescription>Raindrop Sensor</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="flex-1">

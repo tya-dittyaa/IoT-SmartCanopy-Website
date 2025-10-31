@@ -122,7 +122,9 @@ export default function LiveMonitoring() {
                 <div className="text-xl font-bold">{rainStatusText}</div>
               </div>
               <div className="text-center pb-2">
-                <div className="text-xs text-muted-foreground">LDR Sensor</div>
+                <div className="text-xs text-muted-foreground">
+                  Raindrop Sensor
+                </div>
               </div>
             </div>
           </CardContent>
