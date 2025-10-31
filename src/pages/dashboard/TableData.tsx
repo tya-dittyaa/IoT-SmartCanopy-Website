@@ -63,15 +63,19 @@ export default function TableData() {
   );
 
   const fetchTelemetry = useCallback(async () => {
+    let mounted = true;
     if (!selectedDeviceId || !canFetch) {
       setRows([]);
-      return;
+      return () => {
+        mounted = false;
+      };
     }
 
     try {
       const minutes = RANGE_TO_MINUTES[selectedRange] ?? 1000;
       const deviceKey = selectedDeviceId;
       const all = await fetchAllTelemetries(deviceKey, minutes);
+      if (!mounted) return;
 
       const map = new Map<string, Partial<Row>>();
 
@@ -113,10 +117,14 @@ export default function TableData() {
         (a, b) => (Date.parse(b.rawTime) || 0) - (Date.parse(a.rawTime) || 0)
       );
 
-      setRows(grouped);
+      if (mounted) setRows(grouped);
     } catch {
+      if (mounted) setRows([]);
       return;
     }
+    return () => {
+      mounted = false;
+    };
   }, [selectedDeviceId, canFetch, selectedRange]);
 
   useEffect(() => {
