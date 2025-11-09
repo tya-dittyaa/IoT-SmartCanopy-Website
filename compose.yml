@@ -4,7 +4,7 @@ services:
     container_name: smartcanopy-website
     restart: always
     ports:
-      - "29925:80"
+      - "29925:29925"
     networks:
       - proxy-network
 
