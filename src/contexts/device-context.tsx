@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import mqtt, { type MqttClient } from "mqtt";
+import mqtt, { type IClientOptions, type MqttClient } from "mqtt";
 import type { ReactNode } from "react";
 import {
   createContext,
@@ -194,6 +194,20 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
         ? window.location.origin.replace(/^http/, "ws")
         : "ws://localhost:8080");
 
+    const brokerUser = (
+      import.meta.env.VITE_MQTT_BROKER_USER as string | undefined
+    )?.trim();
+    const brokerPass = (
+      import.meta.env.VITE_MQTT_BROKER_PASS as string | undefined
+    )?.trim();
+
+    const connectOptions: IClientOptions = {
+      reconnectPeriod: 1000,
+      clientId: `smartcanopy-web-client-${Math.random().toString(16).slice(3)}`,
+      ...(brokerUser ? { username: brokerUser } : {}),
+      ...(brokerPass ? { password: brokerPass } : {}),
+    };
+
     let telemetryTimer: number | null = null;
     const clearTelemetryTimer = () => {
       if (telemetryTimer) {
@@ -219,12 +233,7 @@ export const DeviceProvider = ({ children }: { children: ReactNode }) => {
     };
 
     try {
-      const client = mqtt.connect(brokerUrl, {
-        reconnectPeriod: 1000,
-        clientId: `smartcanopy-web-client-${Math.random()
-          .toString(16)
-          .slice(3)}`,
-      });
+      const client = mqtt.connect(brokerUrl, connectOptions);
 
       client.on("connect", () => {
         client.subscribe("mqtt/devices/+/telemetry", (err) => {
