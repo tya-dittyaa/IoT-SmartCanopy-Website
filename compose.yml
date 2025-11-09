@@ -6,8 +6,8 @@ services:
     ports:
       - "29925:80"
     networks:
-      - cf-net
+      - proxy-network
 
 networks:
-  cf-net:
+  proxy-network:
     external: true
